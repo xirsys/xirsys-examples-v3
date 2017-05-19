@@ -1,0 +1,12 @@
+{
+  "xirsys": {
+    "gateway": "us.xirsys.com",
+    "info": {
+      "ident": "< Your Account Ident >",
+      "secret": "< Your Account Secret >",
+      "channel": "< Your Account Channel Path >",
+      "secure": "true"
+    },
+    "allowedServices": ["/_token", "/_host", "/_data", "/_ns", "/_turn"]
+  }
+}

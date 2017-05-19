@@ -1,0 +1,707 @@
+<!DOCTYPE><html><head>
+
+	<title>Xirsys XSDK: WebRTC Example</title>
+
+	<link rel="stylesheet" type="text/css" href="/webrtc_chat/css/style_webrtc.css"></link>
+
+	<script src="/xirsys_connect.js"></script>
+	<script src="/lib/xirsys.core.js"></script>
+	<script src="/lib/xirsys.signal.js"></script>
+	<script src="/lib/xirsys.api.js"></script>
+	<script src="/lib/xirsys.p2p.adapter.js"></script>
+	<script src="/lib/xirsys.p2p.js"></script>
+
+	<script>
+	
+		'use strict';
+
+		window.onload = function () {
+		
+			// Getting references to page DOM for signalling.
+			var peersEl = document.getElementById('peers'),
+				loginEl = document.getElementById('login'),
+				logOutEl = document.getElementById('log-out'),
+				usernameEl = document.getElementById('username'),
+  				usernameLabelEl = document.getElementById('username-label'),
+				messageEl = document.getElementById('message'),
+				sendMessageEl = document.getElementById('sendMessage'),
+				messagesEl = document.getElementById('messages'),
+				chatBtn = document.getElementById('chat-btn'),
+				msgHistory = document.getElementById('chatHistory'),
+				hideColumnBtn = document.getElementById('hideColumn'),
+				showColumnBtn = document.getElementById('showColumn');
+				
+			// Getting references to page DOM for video calling.
+			var callPeerEl = document.getElementById('call-peer'),
+				hangUpEl = document.getElementById('hang-up'),
+				localVideoEl = document.getElementById('local-video'),
+				remoteVideoEl = document.getElementById('remote-video'),
+				// localFullScreenEl = document.getElementById('local-full-screen'),
+				remoteFullScreenEl = document.getElementById('remote-full-screen'),
+				peerInfoView = document.getElementById('remote-username'),
+				videoMenu = document.getElementById('video-menu'),
+				mainEndCall = peerInfoView.querySelectorAll('#hang-up')[0],
+				remotePeerName = document.querySelectorAll('#remote-username .title-text')[0];
+				
+			var automaticAnswer = false;
+		
+			// Create a p2p object. Pass a proxy server with your ident and
+			// secret if you intend to connect securely.// Settings for video calling.
+			var p = new $xirsys.p2p(
+				(xirsysConnect.secureTokenRetrieval === true) ? 
+					xirsysConnect.server : null,
+				{
+					audio: true, 
+					video: true
+				},
+				localVideoEl,
+				remoteVideoEl
+			);
+			
+			var username = '';
+
+			//var peerSession;//peer whom you are chatting with.
+			var remoteChatRequest = {};//user requesting to chat
+			//if css has chatHistory display:none (hidden), set this to false else set true.
+			var chatOn = true;
+			
+
+				/* User interface handler functions */
+			
+			// When the connect button is clicked hide log-in, check the user-
+			// name is valid, cancel automatic answers (see xirsys.p2p.js
+			// onSignalMessage method) and open a connexion to the server.
+			loginEl.onsubmit = function ($event) {
+				$event.preventDefault();
+				username = usernameEl.value.replace(/\W+/g, '');
+
+				if (!username || username === '') {
+					return;
+				}
+
+				loginEl.parentNode.style.visibility = 'hidden';
+				logOutEl.style.visibility = 'visible';
+
+				if(logOutEl.classList.contains('sign-out')) {
+					logOutEl.classList.remove('sign-out');
+					logOutEl.classList.add('sign-out-grn');
+				}
+
+				var connectionProperties = xirsysConnect.data;
+					connectionProperties.username = username;
+					connectionProperties.automaticAnswer = automaticAnswer;
+
+				p.open(connectionProperties);
+			};
+			
+			// Log out and reset the interface.
+			logOutEl.onclick = function ($event) {
+				$event.preventDefault();
+				username = '';
+				while (usernameLabelEl.hasChildNodes()) {
+					usernameLabelEl.removeChild(usernameLabelEl.lastChild);
+				}
+				usernameLabelEl.appendChild(document.createTextNode('Username'));
+				login.parentNode.style.visibility = 'visible';
+
+				if(logOutEl.classList.contains('sign-out-grn')) {
+					logOutEl.classList.remove('sign-out-grn');
+					logOutEl.classList.add('sign-out');
+				}
+				removeAllPeers();
+				if( remoteChatRequest === undefined ) {
+		            callEnd();
+		        }
+				detachMediaStream(localVideoEl);
+				p.close();
+			};
+			
+			// Send a message to one or all peers.
+			sendMessageEl.onsubmit = function ($event) {
+				$event.preventDefault();
+				if (!p.signal) {
+					addMessage('INFO',{internal:true,type:'msg-alert',message:'You are not yet logged into the chat.'});
+					return;
+				}
+				var msg = messageEl.value;
+				if(msg.length == 0) return;
+				sendMsg(msg, remoteChatRequest.peer);
+				addMessage(username, msg);
+
+				messageEl.value = '';
+			};
+			
+			// Initiates a call, if a single peer has been selected.
+			callPeerEl.onclick = function () {
+				//if in chat. not allowed.
+				if(!!remoteChatRequest.peer){
+					//todo - check if peer exists, then check if chat is open if not open it and tell them error.
+					addMessage('ERROR',{internal:true,type:'msg-alert',message:'Only a one-on-one peer conversation is currently allowed. Please end this call to chat with another user.'});
+					if(!chatOn) showChat(true);
+					return;
+				}
+
+				var peerName = selectedPeer();
+				if(!!peerName) {
+					p.call(peerName);
+					callStart(peerName);
+					addMessage('INFO',{internal:true,type:'msg-info',message:'Sending chat request to '+peerName});
+				} else {
+					addMessage('ERROR',{internal:true,type:'msg-alert',message:'You must select a single peer before initiating a call.'});
+				}
+			};
+			
+			// Ends current call, if any.
+			mainEndCall.onclick = hangUpEl.onclick = function () {
+				callEnd();
+			};
+			
+			remoteFullScreenEl.onclick = function ($evt) {
+				var majBox = document.getElementsByClassName('major-box')[0];
+				fullScreenVideo(majBox);//remoteVideoEl);
+			};
+
+			hideColumnBtn.onclick = function($evt) {
+				var col = document.getElementsByClassName('vertical-bar')[0];
+				col.style.display = 'none';
+				showColumnBtn.style.display = 'unset';
+			};
+			
+			showColumnBtn.onclick = function($evt) {
+				this.style.display = 'none';
+				var col = document.getElementsByClassName('vertical-bar')[0];
+				col.style.display = 'unset';
+			};
+
+			//peer select handling
+			peersEl.onclick = function ($evt) {
+				var tar = $evt.target;
+				if( tar.classList.contains('peer') ) setSelectedPeer(tar);
+			};
+
+			//show/hide chat
+			chatBtn.onclick = function($evt){
+				showChat( !chatOn );
+			}
+
+
+				/* Other interface functions */
+			
+			// When a peer connects check to see if it is the user. If it is 
+			// update the user's label element. If it is not check if the peer
+			// is already listed and add an element if not.s
+			var addPeer = function ($peerName) {
+				//if local user add to Username Label not list.
+				if ($peerName == username) {
+					while (usernameLabelEl.hasChildNodes()) {
+						usernameLabelEl.removeChild(usernameLabelEl.lastChild);
+					}
+					usernameLabelEl.appendChild(document.createTextNode(stripLeaf($peerName)));
+				} //Remote user, add to list.
+				else {
+					if (!document.getElementById('peer-' + $peerName)) {
+						//create icon
+						var imgEl = document.createElement('div');
+							imgEl.setAttribute('class', 'peer-icon user-icon-img');
+						//create label
+						var txtEl = document.createElement('span');
+							txtEl.setAttribute('class','sr-only');
+							txtEl.setAttribute('class', 'peer-label');
+							txtEl.textContent = stripLeaf($peerName);
+						//add to div container
+						var nodeEl = document.createElement('div');
+							nodeEl.appendChild(imgEl);
+							nodeEl.appendChild(txtEl);
+							nodeEl.id = 'peer-' + $peerName;
+							nodeEl.className = 'peer';
+						//add To peers list
+						peersEl.appendChild(nodeEl);
+					}
+				}
+			};
+			
+			// Removes peer elements from the page when a peer leaves.
+			var removePeer = function ($peerName) {
+				var nodeEl = document.getElementById('peer-' + $peerName);
+				var curSel = selectedPeer(true);
+				if( !!curSel && curSel.id == nodeEl.id) {
+					setSelectedPeer(curSel, false);
+				}
+				if( !!nodeEl ) peersEl.removeChild(nodeEl);
+			};
+			
+			// For resetting the peers list, leaving the __all__ selector only.
+			var removeAllPeers = function () {
+				var selectors = peersEl.getElementsByTagName('div');
+				var i, len = selectors.length;
+				for(i=0; i<len; i++){
+					var peerSel = selectors[i];
+					if( !!peerSel && peerSel.classList.contains('peer') ) peersEl.removeChild(peerSel);
+				}
+			};
+			
+			// Get the name of the peer the user has selected.
+			//@ returnObject - if true, returns entire object not just name value.
+			var selectedPeer = function (returnObject) {
+				var peerEl = document.getElementsByClassName('peer');
+				for (var i=0, l=peerEl.length; i<l; i++) {
+					var peer = peerEl[i];
+					//console.log( 'peer: ',peer,'  is sel: '+ (peer.classList.contains('selected')) );
+					if (peer.classList.contains('selected')) {
+						if(peer.id == '__all__') return undefined;
+						//console.log('value: ',peer.id);
+						return !!returnObject ? peer : (peer.id).substr(5);
+					}
+				}
+			};
+			
+			var setSelectedPeer = function($peer, $setting) {
+				//if setting is there use, otherwise set true by default.
+				if($setting == undefined) $setting = true;
+				var sel = selectedPeer(true);//get peer object.
+				//if a peer element is selected, remove the selected state before setting the new peer.
+				if(!!sel) {
+					//console.log('selc: ',sel,', img: ',sel.getElementsByClassName('peer-icon')[0]);
+					sel.classList.remove('selected');
+					//if the peer is the same as the selected one, do not reselect.
+					if(sel.id === $peer.id) {
+						if(callPeerEl.classList.contains('start-call-grn')) {
+							callPeerEl.classList.remove('start-call-grn');
+							callPeerEl.classList.add('start-call');
+						}
+						return;
+					}
+				}
+				if(callPeerEl.classList.contains('start-call')) {
+					callPeerEl.classList.remove('start-call');
+					callPeerEl.classList.add('start-call-grn');
+				}
+				$peer.classList.add('selected');
+			};
+
+
+
+		    var onMessage = function ( event ){
+		        console.log("onMessage: ",event.data);
+		        // if user is chatting with peer, only show peer messages otherwise post public message
+		        var peer = remoteChatRequest.peer;
+		        if(!!peer){
+		            if(event.sender === peer) addMessage(peer, event.data);
+		        } else {
+		            addMessage(event.sender, event.data);
+		        }
+		        
+		    };
+
+			var sendMsg = function (msg, peer){
+				if(!!peer){
+					p.signal.send('message', msg, peer);
+				} else {
+					p.signal.send('message', msg);
+				}
+		    };
+
+			// Add a message to the conversation.
+			var addMessage = function ($from, $msg) 
+			{
+				//msg-user, msg-peer, msg-alert, msg-info
+				var msgClass = 'chat-msg ' + ($from === username ? 'msg-user' : 'msg-peer');
+				//for internal messages. (used obj in from to avoid spoofing.)
+		    	if( typeof($msg) === 'object'){
+		    		var type = $msg.type;
+		            //action message.
+		            if( type === 'action' ){
+		            	console.log('action: ',$msg.code,', peer: ',$msg.peer,' cur: ', remoteChatRequest.peer);
+		                if($msg.code === 'rtc.p2p.close' && remoteChatRequest.peer == $msg.peer ) {
+		                	callEnd();
+		                	return;
+		                } else if($msg.code === 'rtc.p2p.deny' && remoteChatRequest.peer == $msg.peer ) {
+		                	type = 'msg-alert';//convert action to alert.
+		                	callEnd(null, true);
+		                } else {//PATCH: sends an extra call when end video chat.
+		                	return;
+		                }
+		            }
+		            if(!!$msg.from) $from = $msg.from;
+		            //if not an action message its an info or alert.
+		    		msgClass = 'chat-msg ' + type;
+		            //build common message format.
+		    		$msg = $msg.message;
+		    	}
+				var msgContainer = createMsgBox($from, $msg, msgClass);
+				//user message container
+				messagesEl.appendChild(msgContainer);
+				messagesEl.scrollTop = messagesEl.scrollHeight;
+			};
+
+			//factory creates message box for chat display.
+			//@from - displays who message is from
+			//@msg - actual message to display
+			//@class - for styling different types of messages peers, alerts etc.
+			var createMsgBox = function($from, $msg, $class) {
+				// date sent
+		        var d = new Date();
+		        var hr = d.getHours().toString(), min = d.getMinutes().toString();
+		        var msgTime = (hr.length == 1 ? 0+hr : hr)+":"+(min.length == 1 ? 0+min : min);
+		        //from name txt and message time text
+				var sentLbl = document.createElement('span');
+					sentLbl.innerHTML = $from.toUpperCase()+': ';
+				var timeLbl = document.createElement('span');
+					timeLbl.innerHTML = msgTime;
+				//header container for name and time ele.
+				var headerTxt = document.createElement('div');
+					var nm = headerTxt.appendChild(sentLbl);
+						nm.className = 'msg-from';
+					var tm = headerTxt.appendChild(timeLbl);
+						tm.className = 'msg-time';
+					headerTxt.className = 'msg-header';
+				//message text
+				var msgEl = document.createElement('div');
+					msgEl.innerHTML = $msg;
+
+				var msgContainer = document.createElement('div');
+					msgContainer.appendChild(headerTxt);
+					msgContainer.appendChild(msgEl);
+					//msg-user, msg-alert, msg-info
+					if(!!$class) msgContainer.className = $class;
+
+				return msgContainer;
+			};
+
+			// Returns a peer name without the room and application details.
+			// This function may now be redundant as the format of messages from
+			// the Xirsys server has changed.
+			var stripLeaf = function ($p) {
+				if($p === undefined) return;
+				return $p.substr($p.lastIndexOf('/')+1);
+			};
+			
+			//show and hide chat.
+			var showChat = function( $show ) {
+				msgHistory.style.display = !$show ? 'none' : 'inherit';
+				sendMessageEl.style.display = !$show ? 'none' : 'inherit';
+				chatBtn.style.backgroundColor = !$show ? '#797979' : '#81b75c';
+				console.log('showChat '+$show+', display: '+msgHistory.style.display);
+
+				chatOn = $show;
+				messagesEl.scrollTop = messagesEl.scrollHeight;
+				if(chatOn && isFullScreen() ){
+					fullScreenVideo();
+				}
+			};
+
+
+
+
+
+			// Deal with an incoming call.
+			// If you've turned off automatic responses then listen to call
+			// offers and allow the user to decide whether to respond or not.
+			// Else calls are automatically answered (see xirsys.p2p.js).
+			var callIncoming = function ($peer, $data) {
+				//if local user in session, cannot chat with requestor, send notification.
+				//console.log('callIncoming ',$peer,'  -  insession: '+(!!remoteChatRequest.peer) );
+				if (automaticAnswer === false) {
+					if (confirm('Take a call from ' + $peer + '?')) {
+						p.answer($peer, $data);
+						callStart($peer);
+						addMessage('INFO',{internal:true,type:'msg-info',message:'Taking a call from ' + $peer});
+					} else {
+						addMessage('INFO',{internal:true,type:'msg-alert',message:'You rejected a call request from ' + $peer + '.'});
+						console.log('Denied Call: ', $peer);//action
+						sendMsg({internal:true,type:'action',code:'rtc.p2p.deny',peer:username,message:username+' denied your call request.',from:'INFO'}, $peer);
+						//sendMsg({internal:true,type:'msg-alert',message:username+' denied your call request.',from:'INFO'}, $peer);
+					}
+				} else {
+					//addMessage('Taking a call from ' + $peer);
+					addMessage('INFO',{internal:true,type:'msg-info',message:'Taking a call from ' + $peer});
+					callStart($peer);
+				}
+			};
+			
+			// Full-screens any HTML5 video on the page.
+			var fullScreenVideo = function ($video) {
+				// are we full-screen?
+				if(isFullScreen()){
+					if (document.exitFullscreen) {
+						document.exitFullscreen();
+					} else if (document.webkitExitFullscreen) {
+						document.webkitExitFullscreen();
+					} else if (document.mozCancelFullScreen) {
+						document.mozCancelFullScreen();
+					} else if (document.msExitFullscreen) {
+						document.msExitFullscreen();
+					}
+					//remoteFullScreenEl.style.backgroundColor = '#797979';
+				} //else go to fullscreen
+				else {
+					if ($video.requestFullscreen) {
+						$video.requestFullscreen();
+					} else if ($video.webkitRequestFullscreen) {
+						$video.webkitRequestFullscreen();
+					} else if ($video.mozRequestFullScreen) {
+						$video.mozRequestFullScreen();
+					} else if ($video.msRequestFullscreen) {
+						$video.msRequestFullscreen();
+					}
+					//remoteFullScreenEl.style.backgroundColor = '#81b75c';
+				}
+			};
+
+			var FShandler = function(){
+				//if screen is in fullscreen video
+				if(isFullScreen()){
+					if(remoteFullScreenEl.classList.contains('remote-fs-unselected')) {
+						remoteFullScreenEl.classList.remove('remote-fs-unselected');
+						remoteFullScreenEl.classList.add('remote-fs-selected');
+					}
+					if(showColumnBtn.style.display != 'none'){
+						showColumnBtn.style.visibility = 'hidden';
+					}
+				} //if screen is not in fullscreen
+				else {
+					if(remoteFullScreenEl.classList.contains('remote-fs-selected')) {
+						remoteFullScreenEl.classList.remove('remote-fs-selected');
+						remoteFullScreenEl.classList.add('remote-fs-unselected');
+					}
+					if(showColumnBtn.style.display != 'none'){
+						showColumnBtn.style.visibility = 'visible';
+					}
+				}
+			};
+
+			var isFullScreen = function(){
+				return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+			}
+
+			document.addEventListener("fullscreenchange", FShandler);
+			document.addEventListener("webkitfullscreenchange", FShandler);
+			document.addEventListener("mozfullscreenchange", FShandler);
+			document.addEventListener("MSFullscreenChange", FShandler);
+
+			var callStart = function($peerName) 
+			{
+				remotePeerName.innerHTML = $peerName;
+				remoteChatRequest = {peer:$peerName};
+
+				if(hangUpEl.classList.contains('end-call')) {
+					hangUpEl.classList.remove('end-call');
+					hangUpEl.classList.add('end-call-grn');
+				}
+
+				//udpate indicator in userlist item
+				var sel = document.getElementById('peer-'+remoteChatRequest.peer);
+				if(!!sel) {
+					var pIcon = sel.getElementsByClassName('peer-icon')[0];
+					if(pIcon.classList.contains('user-icon-img')) {
+						pIcon.classList.remove('user-icon-img');
+						pIcon.classList.add('user-icon-img-grn');
+					}
+				}
+				//hide chat by default
+				showChat(false);
+				//show remote video elements.
+				var majBox = document.getElementsByClassName('major-box')[0];
+				if(majBox.classList.contains('hide-vid')) majBox.classList.remove('hide-vid');
+				var minBox = document.getElementsByClassName('minor-box')[0];
+				if(minBox.classList.contains('box-standby')) minBox.classList.remove('box-standby');
+				remoteVideoEl.style.visibility = 'visible';
+
+				//show buttons
+				peerInfoView.style.visibility = 'visible';
+				videoMenu.style.visibility = 'visible';
+				console.log('callStart: ',remoteChatRequest);
+			};
+			
+		    var callEnd = function ($event, $denied)
+		    {
+		        console.log('*** callEnd, peer:  ',remoteChatRequest.peer);
+		        remotePeerName.innerHTML = 'No Caller';
+				
+				if(hangUpEl.classList.contains('end-call-grn')) {
+					hangUpEl.classList.remove('end-call-grn');
+					hangUpEl.classList.add('end-call');
+				}
+
+		        p.hangUp();
+
+		        if( remoteChatRequest.peer === undefined ) return;
+
+				var sel = document.getElementById('peer-'+remoteChatRequest.peer);
+				if(!!sel) {
+					var pIcon = sel.getElementsByClassName('peer-icon')[0];
+					if(pIcon.classList.contains('user-icon-img-grn')) {
+						pIcon.classList.remove('user-icon-img-grn');
+						pIcon.classList.add('user-icon-img');
+					}
+				}
+				//show chat if hidden
+				showChat(true);
+				//hide remote video elements.
+				var majBox = document.getElementsByClassName('major-box')[0];
+				if(!majBox.classList.contains('hide-vid')) majBox.classList.add('hide-vid');
+				var minBox = document.getElementsByClassName('minor-box')[0];
+				if(!minBox.classList.contains('box-standby')) minBox.classList.add('box-standby');
+				remoteVideoEl.style.visibility = 'hidden';
+				//hide btns
+				peerInfoView.style.visibility = 'hidden';
+				videoMenu.style.visibility = 'hidden';
+				//if its a denial, do not send messages.
+				if($denied === false){
+			        sendMsg({internal:true,type:'action',code:'rtc.p2p.close',peer:username}, remoteChatRequest.peer);
+			        addMessage('INFO',{internal:true,type:'msg-info',message:'Your chat with '+remoteChatRequest.peer+' has endeed.'});
+			    }
+				remoteChatRequest = {};
+
+				if( isFullScreen() ){
+					fullScreenVideo();
+				}
+		    };
+
+		    var callDenied = function( $event, $peer, $data ){
+		    	if($data.code === 'user.insession'){
+		    		var peer = remoteChatRequest.peer;
+		    		callEnd($event, true);
+					addMessage('ERROR',{internal:true,type:'msg-alert',message:peer+' is currently in a session, please try again later.'});
+		    	}
+		    };
+
+
+
+
+
+			/* Watching for and responding to XSDK events */
+			
+			var events = $xirsys.events.getInstance();
+			
+			// We get this when we login. There may be zero
+			// to many peers at this time.
+			events.on($xirsys.signal.peers, function ($evt, $msg) {
+				for (var i = 0; i < $msg.users.length; i++) {
+					addPeer($msg.users[i]);
+				}
+			});
+			
+			// When a peer connects to signalling, we
+			// get notified here.
+			events.on($xirsys.signal.peerConnected, function ($evt, $msg) {
+				addPeer($msg);
+			});
+			
+			// When a peer disconnects from the signal server we get notified.
+			events.on($xirsys.signal.peerRemoved, function ($evt, $msg) {
+				removePeer($msg);
+			});
+			
+			// When a peer sends you (or you and all other peers) a message.
+			events.on($xirsys.signal.message, function ($evt, $msg) {
+				if ($msg.sender != name) {
+					//addMessage(stripLeaf($msg.sender), $msg.data);
+					onMessage({sender:stripLeaf($msg.sender), data:$msg.data});
+				}
+			});
+			
+			// When a peer requests a connection for a video call from you.
+			events.on($xirsys.p2p.offer, function ($evt, $peer, $data) {
+				callIncoming($peer, $data);
+			});
+    		
+    		events.on($xirsys.p2p.iceDisconnected, function ($evt) {callEnd($evt);});
+
+    		events.on($xirsys.p2p.requestDenied, function ($evt, $peer, $data) {
+    			callDenied($evt, $peer, $data);
+    		});
+
+			// Log errors in the terminal.
+			events.on($xirsys.signal.error, function ($evt, $msg) {
+				console.error('error: ', $msg);
+				//addMessage('Error', 'There has been an error in the server connection');
+				addMessage('ERROR',{internal:true,type:'There has been an error in the server connection.'});
+			});
+
+		};
+
+	</script>
+
+</head><body>
+
+	<div id="xsdk-video-call">
+		<section class="vertical-bar">
+			<!-- 
+			User Management UI 
+			-->
+			<div id="userInfo">
+				<h1 class="title-text" id="username-label">Username</h1>
+				<div class="box">
+					<div id="log-out" class="menu-icon-btns sign-out">
+						<text>LOGOUT</text>
+					</div>
+					<div id="call-peer" class="menu-icon-btns start-call">
+						<text>CALL</text>
+					</div>
+					<div id="hang-up" class="menu-icon-btns end-call">
+						<text>Hang Up</text>
+					</div>
+				</div>
+				<div id="hideColumn" class="hide-btn"></div>
+			</div>
+			
+			<div id="peers">
+				<!-- Peers List -->
+			</div>
+
+		</section>
+		
+		<div id="right-pane">
+
+			<!-- Video to Video Window -->
+			<section class="major-box fb-col-item hide-vid">
+				<!-- Remote User Video -->
+				<video id="remote-video" autoplay="autoplay"></video>
+				<!-- Local User Video -->
+				<section class="minor-box box-standby">
+					<video id="local-video" autoplay="autoplay" muted="true"></video>
+				</section>
+				<!-- Remote Username Label and Hangup Button -->
+				<div id="remote-username">
+					<div id="hang-up" class="rounded-btn end-call-wt"></div>
+					<h1 class="title-text">No Caller</h1>
+				</div>
+				<!-- Expand and Chat buttons for P2P chat -->
+				<div id="video-menu">
+					<div id="remote-full-screen" class="rounded-btn expand remote-fs-unselected"></div>
+					<div id="chat-btn" class="rounded-btn chat-on"></div>
+				</div>
+				<!-- Company Logo -->
+				<div id="co-logo" class="brand-logo"></div>
+				<div id="showColumn" class="hide-btn"></div>
+			</section>
+
+			<!-- CHAT -->
+			<section id="chatHistory" class="horizontal-bar fb-col-item">
+				<div id="messages">
+					<!-- Display user messages history -->
+				</div>
+			</section>
+
+			<!-- Sends user messages -->
+			<form id="sendMessage" class="message">
+				<input type="text" id="message" autocomplete="off" placeholder="Enter chat text here" />
+				<button id="submit-btn" type="submit"></button>
+			</form>
+		</div>
+
+		<!-- Login UI -->
+		<section class="cover">
+			<form id="login">
+				<h1 id="heading">Welcome</h1>
+				<input id="username" type="text" placeholder="Enter your name" />
+				<button id="login-btn" type="submit">CONNECT</button>
+			</form>
+		</section>
+		
+	</div>
+
+
+</body></html>
+

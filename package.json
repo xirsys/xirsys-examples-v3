@@ -1,0 +1,27 @@
+{
+  "name": "Xirsys Examples for V3",
+  "version": "1.0.0",
+  "description": "Xirsys Examples for V3 API",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "myinstall": "npm install",
+    "start": "node server.js",
+    "uninstall": "npm uninstall -s"
+
+
+  },
+  "repository": {
+  },
+  "keywords": [],
+  "author": "Xirsys",
+  "license": "GPL-1.0",
+  "bugs": {
+  },
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "method-override": "^2.3.8",
+    "config": "~1.21.0",
+    "express": "~4.14.0"
+  }
+}

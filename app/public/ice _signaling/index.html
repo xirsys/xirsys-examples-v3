@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Xirsys API Series</title>        
+    <!-- BOOTSTRAP CSS-->
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous"/>    
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-6 col-sm-6 col-sm-offset-3">
+                <form class="hidden">                        
+                    <div class="form-group">
+                        <table id="iceTable" class="table">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">STUN/TURN URLs</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- rows containing STUN&TURN URLs-->                            
+                            </tbody>
+                        </table>
+                        <label for="signalInput">Signal URL:</label>
+                        <input type="text" class="form-control" id="signalInput" placeholder="**********" readonly>
+                    </div>  
+                </form>             
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <!-- BOOTSTRAP JS -->
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js" integrity="sha512-K1qjQ+NcF2TYO/eI3M6v8EiNYZfA95pQumfvcVrTHtwQVDG+aHRqLi/ETn2uB+1JqwYqVG3LIvdm9lj6imS/pQ==" crossorigin="anonymous"></script>
+    <script type="text/javascript">    	
+        var config = {
+            "xirsys": {
+                "gateway": "es.xirsys.com",
+                "info": {
+                    "ident": "noev",
+                    "secret": "47dc2468-133a-11e7-baba-6e3ba1b2b0fb",
+                    "channel": "channel1",
+                    "secure": "true"
+                }
+            }
+        };
+        var iceServers;
+        var signalURL;
+        $(function(){
+            function errorHandler(xhr){
+                alert("An error occured: " + xhr.status + " " + xhr.statusText);
+            }
+            // 
+            function getHost(){
+                $.ajax({
+                    url: "https://"+config.xirsys.gateway+"/_host", 
+                    type: "GET",
+                    contentType: "json",
+                    headers: {
+                        "Authorization": "Basic " + btoa(config.xirsys.info.ident + ":" + config.xirsys.info.secret)
+                    },
+                    data: {
+                        k:"user", 
+                        type:"signal"
+                    },
+                    error: errorHandler,
+                    success: function(result){      
+                        signalURL = result.v;                 
+                        getToken();
+                    }
+                });
+            }    
+            function getToken(){
+                $.ajax({
+                    url: "https://"+config.xirsys.gateway+"/_token/"+config.xirsys.info.channel, 
+                    type: "PUT",
+                    contentType: "json",
+                    headers: {
+                        "Authorization": "Basic " + btoa(config.xirsys.info.ident + ":" + config.xirsys.info.secret)
+                    },
+                    data: {
+                        k:"user", 
+                        expire: 120
+                    },
+                    error: errorHandler,
+                    success: function(result){
+                        signalURL = signalURL + '/v1/' + result.v;                        
+                        getTurn();
+                    }
+                });
+            }    
+            function getTurn(){ 
+                $.ajax({
+                    url: "https://"+config.xirsys.gateway+"/_turn/"+config.xirsys.info.channel, 
+                    type: "PUT",
+                    contentType: "json",
+                    headers: {
+                        "Authorization": "Basic " + btoa(config.xirsys.info.ident + ":" + config.xirsys.info.secret)
+                    },
+                    error: errorHandler,
+                    success: function(result){
+                        /*update DOM elements and display*/
+                        $.each( result.v["iceServers"], function( key, value ) {
+                            $('#iceTable > tbody:last-child').append('<tr><td class="text-center">'+ value.url +'</td></tr>');
+                        });
+                        $('#signalInput' ).val(signalURL);
+                        $("form").toggleClass("hidden");
+                    }
+                });
+            }
+            //
+            getHost();
+        });
+    </script>
+</body>
+</html>
