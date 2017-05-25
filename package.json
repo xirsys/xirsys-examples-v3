@@ -1,5 +1,5 @@
 {
-  "name": "Xirsys Examples for V3",
+  "name": "Xirsys",
   "version": "1.0.0",
   "description": "Xirsys Examples for V3 API",
   "main": "server.js",
@@ -8,8 +8,6 @@
     "myinstall": "npm install",
     "start": "node server.js",
     "uninstall": "npm uninstall -s"
-
-
   },
   "repository": {
   },
