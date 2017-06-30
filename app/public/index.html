@@ -17,6 +17,15 @@
 		ul li p {
 			color: grey;
 		}
+		h3 {
+			margin-bottom: 20px;
+		}
+		.app-view {
+			margin-bottom: 20px;
+		}
+		#more {
+			color: #999;
+		}
 	</style>
 </head>
 <body>
@@ -27,22 +36,33 @@
 
 	<div class="container">
 
-		<section>
+		<section class="app-view">
 			<h3>WebRTC Example Applications</h3>
 			<ul class="list-group">
 				<li class="list-group-item">
 					<a href="/webrtc_chat" target="_blank">WebRTC Chat</a>
 					<p>A full peer to peer video chat using Xirsys signaling and ICE (STUN and TURN) Service</p>
 				</li>
-				<li class="list-group-item"><a href="/ice _signaling" target="_blank">Ice Signaling</a>
-					<p>A simple example that securely queries for ICE credentials, and Signaling server host.</p>
+				<li class="list-group-item">
+					<a href="/signal_chat" target="_blank">Signaling - Chat Sample</a>
+					<p>A simple demo of the V2 Xirsys Signaling Service using a full running chat with private messages. </p>
 				</li>
+				<!--COMING SOON <li class="list-group-item">
+					<a href="/signal_p2p_video" target="_blank">Signaling - P2P Video Chat</a>
+					<p>A simple demo on using the V2 Xirsys Signaling Service with WebRTC P2P video. </p>
+				</li>-->
 			</ul>
 		</section>
+		<h4 id="more">... more samples coming soon</h4>
+
 
 	</div>
 
 
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+	crossorigin="anonymous"></script>
+
 </body>
 </html>

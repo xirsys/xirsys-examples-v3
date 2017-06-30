@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Xirsys Examples - Signal Chat</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+	<style type="text/css">
+		body {
+			background-color: #454547;
+		}
+		.container {
+			padding-bottom: 20px;
+		}
+		.jumbotron {
+			padding: 40px;
+		}
+		h3 {
+			color: white;
+			padding-bottom: 20px;
+		}
+		.panel {
+			margin-bottom: 18px;
+		}
+		.panel-heading {
+			height: 50px;
+    		padding-top: 15px;
+		}
+		#msgView {
+			height: 270px;
+			overflow-y: scroll;
+		}
+
+		#sendView {
+			height: 50px;
+		}
+		#sendInput {
+			height: 50px;
+		}
+		#sendBtn {
+			height: 50px;
+		}
+
+		#usersView {
+			height: 340px;
+			overflow-y: scroll;
+		}
+		.userLabel input {
+			margin-right: 5px;
+		}
+		#msgHist .private-msg {
+			background-color: #EAFEEA;
+		}
+		.list-group-item:first-child, .list-group-item:last-child {
+			border-radius: 0;
+		}
+		.list-group-item {
+			border: none;
+			border-bottom: 1px solid #ddd;
+			margin-bottom: 0;
+		}
+	</style>
+</head>
+<body>
+	<section class="jumbotron">
+		<h1>Xirsys Signaling Sample</h1>
+		<p>Uses Xirsys Signaling to create a simple chat.</p>
+	</section>
+
+	<div class="container">
+
+		<section>
+			<h3 id="chatTitle">Welcome</h3>
+			<div class="row">
+
+				<!-- Left Panel -->
+				<div class="col-lg-3">
+					<!-- User Panel -->
+					<div class="panel panel-default">
+						<!-- Header -->
+						<div class="panel-heading"><b>LIVE USERS</b></div>
+
+						<!-- List group -->
+						<div id="usersView">
+							<ul id="usersList" class="list-group">
+								<!--<li class="list-group-item">This is a user</li>-->
+							</ul>
+						</div>
+					</div>
+				</div>
+
+				<!-- Right Panel -->
+				<div class="col-lg-9">
+
+					<div class="row">
+						<div class="col-lg-10">
+							<div class="panel panel-default">
+								<!-- Header -->
+								<div class="panel-heading"><b>MESSAGE HISTORY</b></div>
+
+								<!-- List group -->
+								<div id="msgView">
+									<ul id="msgHist" class="list-group">
+										<!--<li class="list-group-item">This is a message</li>-->
+									</ul>
+								</div>
+							</div>
+
+							<!-- Message Input -->
+							<!--<label id="privateTo"></label>-->
+							<div id="sendView" class="input-group">
+								<span id="privateTo" class="input-group-addon">Public Message</span>
+								<input id="sendInput" type="text" class="form-control" placeholder="Say Hi...">
+								<span class="input-group-btn">
+									<button id="sendBtn" class="btn btn-default btn-block" type="button">Send</button>
+								</span>
+							</div>
+						</div>
+					</div>
+
+				</div><!-- /Right Panel -->
+
+			</div>
+		</section>
+
+	</div>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+	crossorigin="anonymous"></script>
+
+	<script>
+		//create simple random user id
+		var userName;// Username can come from URL add /index.html?name=User1
+		var tmpToken = '';//temporary authorization token
+		var host = '';//validated signal host
+		var sig;//signal instance.
+		var heartbeat;//keeps signal alive.
+		var privateId;//holds the id/username of the private chat user.
+		var channelPath;//channel path.
+		
+		//get temporary token to connect to signaling server.
+		function doToken(){
+			console.log('PUT doToken to /webrtc/_token?k='+userName);
+			$.ajax({
+				url: '/webrtc/_token?k='+userName,
+				type: 'PUT',
+				dataType: 'json',
+				error: function(data) {console.log('error: ', data);},
+				success: function(data) {
+					tmpToken = data.v;
+					console.log('token: ',tmpToken);
+					doSignal();
+				}
+			});
+		}
+
+		//get valid signaling host.
+		function doSignal(){
+			$.ajax({
+				url: '/webrtc/_host?type=signal&k='+userName,
+				type: 'GET',
+				dataType: 'json',
+				error: function(data) { console.log('error: ', data);},
+				success: function(data) {
+					host = data.v +'/v2/'+ tmpToken;
+					console.log('signal host: ',host);
+					setupSocket();
+				}
+			});
+		}
+
+		//setup socket to signaling server.
+		function setupSocket(){
+			sig = new WebSocket(host);
+			sig.addEventListener('open', evt => {  startHeart(); });//notify when connection is open
+			sig.addEventListener('close', evt => {  console.log('signal closed!'); });//notify when connection closed
+			//notify when a message is received from signal network.
+			sig.addEventListener('message', msg => { 
+				var pkt = JSON.parse(msg.data);
+				console.log('signal message! ',pkt);
+				var payload = pkt.p;//the actual message data sent 
+				var meta = pkt.m;//meta object
+				var msgEvent = meta.o;//event label of message
+				var toPeer = meta.t;//msg to user (if private msg)
+				var fromPeer = meta.f;//msg from user
+				if(!!fromPeer) {//remove the peer path to display just the name not path.
+					var p = fromPeer.split("/");
+					fromPeer = p[p.length - 1];
+				}
+
+				switch (msgEvent) {
+					//first connect, list of all peers connected.
+					case "peers":
+						//this is first call when you connect, 
+						//  so we can check for channelPath here dynamically.
+						var sysNum = meta.f.lastIndexOf('__sys__');
+						if(sysNum > -1 && !channelPath){
+							channelPath = meta.f.substring(0,sysNum);//save message path for sending.
+						}
+						setUsers(payload.users);
+						break;
+					//new peer connected
+					case "peer_connected":
+						addUser(fromPeer);
+						break;
+					//peer left.
+					case "peer_removed":
+						removeUser(fromPeer);
+						break;
+					//message received. Call to display.
+					case 'message':
+						onUserMsg(payload.msg, fromPeer, toPeer);
+						break;
+				}
+				initUI();
+			});
+		}
+
+		//were connected! lets setup the UI for user.
+		function initUI()
+		{
+			$('#chatTitle').text('Your Name: ' + userName);
+			// handle enter key.
+			$('#sendInput').keypress( evt => {
+				if (evt.keyCode == 13 || evt.which == 13) {
+					evt.stopImmediatePropagation();
+					$('#sendBtn').trigger('click');
+				}
+			});
+			$('#sendBtn').click( evt => {
+				evt.stopImmediatePropagation();
+				var sndInput = $('#sendInput');
+				var s = sndInput.val();
+				//do send message, if private send id as well.
+				sendMessage(s, privateId);
+				//dislay message
+				onUserMsg(s, userName, privateId);
+				//clear last message.
+				sndInput.val('');
+				//set field to focus
+				sndInput.focus();
+			});
+			//users check box group routine.
+			$("#usersList input:checkbox").on('click', function() {
+				var $box = $(this);//box clicked.
+				//if the box has been checked
+				if ($box.is(":checked")) {
+					// get name group
+					var group = "input:checkbox[name='" + $box.attr("name") + "']";
+					// set all checkboxes in group to false.
+					$(group).prop("checked", false);
+					//re-set this box to true.
+					$box.prop("checked", true);
+					privateId = $box.parent().text();
+					$('#privateTo').text('Private To: '+privateId);
+				}//if box has been unchecked.
+				else {
+					$box.prop("checked", false);
+					privateId = null;
+					$('#privateTo').text('Public Message');
+				}
+			});
+		}
+		
+		//Setting Complete List of Users
+		function setUsers(aList){
+			$('#usersList').empty();
+			var l = aList.length, i;
+			for(i=0; i < l; i++){
+				addUser(aList[i]);
+			}
+		}
+
+		//Set single user in list
+		function addUser(peer){
+			console.log('addUser ',peer);
+			var omitPath = peer.lastIndexOf('/');//remove user connetion path.
+			if(omitPath > -1){
+				peer = peer.substr(omitPath);
+			}
+			var item;
+			//if user is local user, no need for a check box otherwise add one.
+			if(peer == userName){
+				item  = '<li id='+peer+' class="list-group-item"><i>'+peer+'</i></li>';
+			} else {
+				item  = '<li id='+peer+' class="list-group-item">'+
+							'<span class="userLabel"><input type="checkbox" name="peers" aria-label="...">' +peer+'</span>'+
+						'</li>';
+			}
+			$('#usersList').append(item);
+		}
+
+		//Remove single user in list
+		function removeUser(peer){
+			console.log('removeUser ',peer);
+			//each item in the userlist has their username as the id. (id must be unique)
+			$('#usersList #'+peer).remove();
+			if(peer == privateId){
+				privateId = null;
+				$('#privateTo').text('Public Message');
+
+			}
+		}
+
+		//Remove single user in list
+		function onUserMsg(msg, frmPeer, toPeer)
+		{
+			console.log('onUserMsg ' + frmPeer + (!!toPeer ? ' to ' + toPeer : '') + ': ' + msg);
+			var $hist = $('#msgHist');
+			if( !!toPeer ){
+				$hist.append('<li class="list-group-item private-msg"><p>' + frmPeer + ' to ' + toPeer + ': </p><p>'+msg + '</p></li>');
+			} else {
+				$hist.append('<li class="list-group-item"><p>' + frmPeer + ': </p><p>'+msg + '</p></li>');
+			}
+			var view = $('#msgView')[0];
+			view.scrollTop = view.scrollHeight;
+		}
+
+		// User event, sends user message.
+		function sendMessage(msg, toPeer){
+			if(msg == undefined || msg.length < 1) return;
+			var pkt = {
+				t: "u", // user message service
+				m: {
+					f: channelPath + userName,
+					o: 'message'
+				},
+				p: {msg:msg}
+			}
+			if(!!toPeer) pkt.m.t = toPeer;
+			console.log('sendMessage pkt: ',pkt);
+			sig.send(JSON.stringify(pkt));
+		}
+
+		//Keeps pinging signal server to keep connection alive.
+		function startHeart(){
+			console.log('startHeart');
+			heartbeat = setInterval(function () {sig.send('ping');}, 800);
+		}
+
+		function getURLParameter(name) {
+			var ret = decodeURI( (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1] ) 
+			return  ret == 'null' ? null : ret;
+		};
+
+		function guid(s='user') {
+			function s4() {
+				return Math.floor((1 + Math.random()) * 0x10000)
+				.toString(16)
+				.substring(1);
+			}
+			return s + s4() + s4();// + s4() + s4() + s4() + s4() + s4() + s4();
+		}
+		
+
+		//Begin
+		$( document ).ready( () => {
+			console.log('ready');
+			var urlName = getURLParameter("name");
+			if(!!urlName){
+				userName = urlName;
+			} else {
+				userName = guid();
+			}
+			console.log('userName: ',userName);
+			doToken();
+		});
+	</script>
+
+</body>
+</html>
