@@ -210,7 +210,7 @@
 						break;
 					//message received. Call to display.
 					case 'message':
-						onUserMsg(payload.msg, fromPeer, toPeer);
+						onUserMsg(payload, fromPeer, toPeer);
 						break;
 				}
 				initUI();
@@ -326,7 +326,7 @@
 					f: channelPath + userName,
 					o: 'message'
 				},
-				p: {msg:msg}
+				p: {message:msg}
 			}
 			if(!!toPeer) pkt.m.t = toPeer;
 			console.log('sendMessage pkt: ',pkt);
