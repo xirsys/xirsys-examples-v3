@@ -16,11 +16,14 @@ function WebRtc(xirsys) {
     });
     //apply channel to request/methods that require it only
     router.use(function (req, res, next) {
-        var methods = ['/_token', '/_turn', '_subs', '_data'];
+        var methods = ['/_token', '/_turn', '/_subs', '/_data', '/_acc'];
         var uri = req.url.split('?').shift();
         if(methods.indexOf(uri) != -1){
             var arr = req.url.split('?');
-            req.url = arr[0] +"/"+ xirsys.info.channel + "?" + arr[1];
+            req.url = arr[0] +"/"+ xirsys.info.channel;
+            if(arr[1] != null ){
+                req.url = req.url + "?" + arr[1];
+            }
         }
         next();
     });
