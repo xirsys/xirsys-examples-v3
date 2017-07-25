@@ -8,5 +8,9 @@
       "secure": "true"
     },
     "allowedServices": ["/_token", "/_host", "/_data", "/_ns", "/_turn"]
+  },
+  "host":{
+    "httpport": 3080,
+    "httpsport": 3443
   }
 }

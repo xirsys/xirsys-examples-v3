@@ -2,20 +2,14 @@ const https = require('https');
 const http = require('http');
 const app = require('./app');
 const fs = require('fs');
-const httpport = process.env.PORT || 3080;
-const httpsport = process.env.SECURE_PORT || 3443;
+const config = require('config');
+const  httpport = process.env.PORT || config.get('host').httpport ||3080,
+       httpsport = process.env.SECURE_PORT || config.get('host').httpssport ||3443;
 
 var httpsOptions = {
     key: fs.readFileSync('./app/cert/server.key')
     , cert: fs.readFileSync('./app/cert/server.crt')
 };
-
-app.all('*', function(req, res, next){
-    if (req.secure) {
-        return next();
-    }
-    res.redirect('https://localhost:'+httpsport+req.url);
-});
 
 https.createServer(httpsOptions, app).listen(httpsport, function (err) {
     if (err) {
