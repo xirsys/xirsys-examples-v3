@@ -1,0 +1,33 @@
+body {
+	font-family: helvetica, arial, verdana, sans-serif;
+	background-color: #454547;
+}
+
+.container {
+	padding-bottom: 20px;
+	color: white;
+	text-align: center;
+}
+#call-id {
+	font-weight: 200;
+	padding-bottom: 30px;
+}
+.jumbotron {
+	padding: 40px;
+}
+#vid-view {
+	position: relative;
+}
+/* video { */
+.major-box {
+	width: 744px;
+	height: auto;
+}
+.minor-box {
+	width: 200px;
+	height: auto;
+	position: absolute;
+	right: 40px;
+	bottom: 20px;
+}
+
