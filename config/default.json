@@ -7,7 +7,9 @@
       "channel": "< Your Account Channel Path >",
       "secure": "true"
     },
-    "allowedServices": ["/_token", "/_host", "/_data", "/_ns", "/_turn"]
+    "allowedServices": ["/_token", "/_host", "/_data", "/_ns", "/_turn"],
+    // allow client side request to override server-side defined channel
+    "overrideAllowedChannel": false
   },
   "host":{
     "httpport": 3080,
