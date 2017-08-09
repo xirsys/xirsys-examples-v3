@@ -15,7 +15,7 @@ var app = express()
         if (req.secure) {
             return next();
         }
-        res.redirect(req.protocol+'://'+req.hostname+':'+httpsport+req.originalUrl);
+        res.redirect("https"+'://'+req.hostname+':'+httpsport+req.originalUrl);
     })//redirects all http request to https
     .use(express.static(path.join(__dirname, 'public')))//path to examples
     .use("/webrtc",webrtc(xirsys));//watch API calls
