@@ -63,9 +63,9 @@
 			this.url = $url || null;
 			//update ice path
 			if (!!$url) {
-				$xirsys.api.iceUrl = $url + "_turn";
+				if($xirsys.api)$xirsys.api.iceUrl = $url + "_turn";
 				$xirsys.baseUrl = $url;
-				$xirsys.signal.wsList = $xirsys.url("_host", { type: "signal" });
+				if($xirsys.signal)$xirsys.signal.wsList = $xirsys.url("_host", { type: "signal" });
 			}
 			console.log('url '+$url+' base: '+$xirsys.baseUrl);
 		},
