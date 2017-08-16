@@ -61,7 +61,6 @@
                 var self = this,
                     opts = self.xirsys_opts;
                 console.log("TURN OPTS ARE", opts);
-                console.log('api.js getIceServers() - url: ', );
                 $xirsys.ajax.do({
                         url: (!!this.url ? this.url+"/_turn" : $xirsys.api.iceUrl+ "/" + opts.channel), //(this.url+"/_turn" || $xirsys.api.iceUrl+ "/" + opts.channel) ,
                         headers: $xirsys.authHeader(opts),
