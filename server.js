@@ -4,7 +4,7 @@ const app = require('./app');
 const fs = require('fs');
 const config = require('config');
 const  httpport = process.env.PORT || config.get('host').httpport ||3080,
-       httpsport = process.env.SECURE_PORT || config.get('host').httpssport ||3443;
+       httpsport = process.env.SECURE_PORT || config.get('host').httpsport ||3443;
 
 var httpsOptions = {
     key: fs.readFileSync('./app/cert/server.key')
