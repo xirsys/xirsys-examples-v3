@@ -233,9 +233,9 @@
 				var sndInput = $('#sendInput');
 				var s = sndInput.val();
 				//do send message, if private send id as well.
-				sendMessage(s, privateId);
+				var pkt = sendMessage(s, privateId);
 				//dislay message
-				onUserMsg(s, userName, privateId);
+				onUserMsg(pkt.p, userName, privateId);
 				//clear last message.
 				sndInput.val('');
 				//set field to focus
@@ -304,8 +304,8 @@
 		}
 
 		//Remove single user in list
-		function onUserMsg(msg, frmPeer, toPeer)
-		{
+		function onUserMsg(payload, frmPeer, toPeer){
+			var msg = payload.message;
 			console.log('onUserMsg ' + frmPeer + (!!toPeer ? ' to ' + toPeer : '') + ': ' + msg);
 			var $hist = $('#msgHist');
 			if( !!toPeer ){
@@ -331,6 +331,7 @@
 			if(!!toPeer) pkt.m.t = toPeer;
 			console.log('sendMessage pkt: ',pkt);
 			sig.send(JSON.stringify(pkt));
+			return pkt;
 		}
 
 		//Keeps pinging signal server to keep connection alive.
