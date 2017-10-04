@@ -199,6 +199,7 @@
 							channelPath = meta.f.substring(0,sysNum);//save message path for sending.
 						}
 						setUsers(payload.users);
+						initUI();
 						break;
 					//new peer connected
 					case "peer_connected":
@@ -213,7 +214,6 @@
 						onUserMsg(payload, fromPeer, toPeer);
 						break;
 				}
-				initUI();
 			});
 		}
 
@@ -242,7 +242,7 @@
 				sndInput.focus();
 			});
 			//users check box group routine.
-			$("#usersList input:checkbox").on('click', function() {
+			$("#usersList").on('click', 'input:checkbox', function() {
 				var $box = $(this);//box clicked.
 				//if the box has been checked
 				if ($box.is(":checked")) {
