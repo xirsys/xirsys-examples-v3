@@ -8,15 +8,36 @@ body {
 	color: white;
 	text-align: center;
 }
-#call-id {
-	font-weight: 200;
-	padding-bottom: 30px;
+
+#callIDView {
+	margin-bottom: 30px;
 }
+#callID {
+	/* font-weight: 200;
+	padding-bottom: 30px; */
+    color: #fff;
+	text-align: center;
+    background-color: #000;
+    border-radius: 0;
+	border: none;
+	height: 40px;
+}
+#isTURN {
+	border: none;
+    height: 40px;
+}
+#isTURN label {
+	font-weight: 400;
+	margin: 0;
+	margin-left: 5px;
+}
+
 .jumbotron {
 	padding: 40px;
 }
 #vid-view {
 	position: relative;
+	background-color: #000;
 }
 /* video { */
 .major-box {

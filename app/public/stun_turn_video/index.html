@@ -17,7 +17,15 @@
 
 		<section id="share-view" class="row">
 			<h3 id="share-title">Copy and Share this URL:</h3>
-			<label id="call-id"></label>
+			<div id="callIDView" class="input-group col-sm-8 col-sm-offset-2">
+				<input id="callID" type="text" class="form-control" aria-label="..." readonly>
+				<div class="input-group-btn">
+					<span id="isTURN" class="input-group-addon">
+						<input id="isTURNcb" type="checkbox" aria-label="...">
+						<label for="isTURN"> Force TURN</label>
+					</span>
+				</div>
+			</div>
 		</section>
 
 		<section class="row">
@@ -44,7 +52,9 @@
 		// Getting references to page DOM for video calling.
 		var localVideoEl = document.getElementById('local-video'),
 			remoteVideoEl = document.getElementById('remote-video'),
-			callIdEl = document.getElementById('call-id'),
+			callIdEl = document.getElementById('callID'),
+			turnCB = document.getElementById('isTURNcb'),
+			turnViewEL = document.getElementById('isTURN'),
 			shareViewEl = document.getElementById('share-view'),
 			shareTitleEl = document.getElementById('share-title');
 			
@@ -83,7 +93,9 @@
 		function doICE(){
 			console.log('doICE ');
 			if(!ice){
-				ice = new $xirsys.ice('/webrtc');
+				//var isTURN = getURLParameter("isTURN") == 'true';//get force turn var.
+				//console.log('isTURN ',isTURN);
+				ice = new $xirsys.ice('/webrtc')//,{turnOnly:isTURN});
 				ice.on(ice.onICEList, onICE);
 			}
 		}
@@ -97,11 +109,9 @@
 		//Get local user media
 		function getMyMedia(){
 			console.log('getMyMedia()');
-			navigator.getUserMedia( 
-				mediaConstraints, //set constraints
-				str => {setLocalStream(str); doSignal();},//onSuccess
-				err => { console.log('Could not get Media: ', err); alert('Could not get Media!! Check your Camera.'); }//onError
-			);
+			navigator.mediaDevices.getUserMedia(mediaConstraints)
+			.then(str => {setLocalStream(str); doSignal();})//onSuccess
+			.catch(err => { console.log('Could not get Media: ', err); alert('Could not get Media!! Please check your camera and mic.'); });
 		}
 		
 		//Get Xirsys Signaling service
@@ -121,7 +131,7 @@
 					fromPeer = p[p.length - 1];
 				}
 				switch (msgEvent) {
-					//first connect, list of all peers connected.
+					//first Connect Success!, list of all peers connected.
 					case "peers":
 						//this is first call when you connect, 
 						onReady();
@@ -132,6 +142,7 @@
 							var l = users.length;
 							for (var i = 0; i < l; i++) {
 								var user = users[i];
+								//if this is the user, call them.
 								if (user === remoteCallID) {
 									callRemotePeer();
 								}
@@ -159,9 +170,11 @@
 		function onReady(){
 			console.log('* onReady!');
 			// setup peer connector, pass signal, our media and iceServers list.
-			peer = new $xirsys.p2p(sig,localStream,{iceServers:ice.iceServers});
+			let isTURN = getURLParameter("isTURN") == 'true';//get force turn var.
+			console.log('isTURN ',isTURN);
+			peer = new $xirsys.p2p(sig,localStream,(!ice ? {} : {iceServers:ice.iceServers}), {forceTurn:isTURN});
 			//add listener when a call is started.
-			peer.on('peer.connect.success', onStartCall);
+			peer.on(peer.peerConnSuccess, onStartCall);
 		}
 		// A peer call started udpate the UI to show remote video.
 		function onStartCall(evt){
@@ -175,6 +188,7 @@
 			if(remoteVideoEl.classList.contains('hidden')){
 				remoteVideoEl.classList.remove('hidden');
 			}
+			shareTitleEl.innerHTML = 'In call with user:';
 			remoteCallID = remoteId;
 			inCall = true;
 		}
@@ -231,13 +245,27 @@
 		window.onload = () => {
 			username = guid();//create random local username
 			var urlName = getURLParameter("callid");//get call id if exists from url
-			if(!!urlName){
+			if(!!urlName) {
 				remoteCallID = urlName;
-				shareTitleEl.innerHTML = 'Call With User';
-				callIdEl.innerHTML = remoteCallID;
+				shareTitleEl.innerHTML = 'Calling User...';
+				callIdEl.value = remoteCallID;
+				console.log('turnview: ',turnViewEL);
+				turnViewEL.style.display = 'none';
 			} // if call id does not exist this is the callee
 			else {
-				callIdEl.innerHTML = location.origin + location.pathname + '?callid='+username;
+				//callIdEl.innerHTML = location.origin + location.pathname + '?callid='+username;
+				callIdEl.value = location.origin + location.pathname + '?callid='+username;
+
+				$(turnCB).on('click', evt => {
+					//console.log('TURN: ',evt);
+					let checked = evt.target.checked;
+					if(checked == true){
+						callIdEl.value = location.origin + location.pathname + '?callid='+username+'&isTURN=true';
+					} else {
+						callIdEl.value = location.origin + location.pathname + '?callid='+username;
+					}
+					peer.forceTurn = checked;
+				})
 			}
 			//get Xirsys service
 			doICE();

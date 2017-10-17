@@ -24,9 +24,10 @@
 *********************************************************************************/
 
 if(!$xirsys) var $xirsys = new Object();
-var _p2p = $xirsys.p2p = function (signal, mediaStream, servers) {
+var _p2p = $xirsys.p2p = function (signal, mediaStream, servers, info) {
+    if(!info) info = {};
     //info can have TURN only filter.
-    console.log('*p2p*  constructor - servers: ',servers,', mediaStream: ',mediaStream,', sig: ',signal);
+    console.log('*p2p*  constructor - servers: ',servers,', mediaStream: ',mediaStream,', sig: ',signal,', info: ',info);
     this.evtListeners = {};
     this.pc;//peer connection
 
@@ -38,12 +39,15 @@ var _p2p = $xirsys.p2p = function (signal, mediaStream, servers) {
         this.sig.on('answer', evt => { own.receiveAnswer(evt); });
     }
     this.servers = !!servers ? servers : {};
+    this.forceTurn = !!info.forceTurn ? info.forceTurn : false;
     this.stream = mediaStream;
     this.remotePeerID;
     this.remoteStreams = {};
 
     this.isCaller;//true / false
 }
+
+_p2p.prototype.peerConnSuccess = 'peer.connect.success';
 
 _p2p.prototype.callPeer = function(custID){
     console.log('*p2p*  callPeer ',custID);
@@ -52,10 +56,9 @@ _p2p.prototype.callPeer = function(custID){
         var own = this;
         this.remotePeerID = custID;
         this.pc.addStream(this.stream);
-        this.pc.createOffer ( 
-            desc => {own.setLocalAndSendMessage(desc);}, // success
-            err => {own.onCreateSessionDescriptionError(err);} // error
-        );
+        this.pc.createOffer()
+        .then(desc => {own.setLocalAndSendMessage(desc);}) // success
+        .catch(err => {own.onCreateSessionDescriptionError(err);}); // error
     }
 }
 
@@ -68,8 +71,9 @@ _p2p.prototype.receiveCandidate = function(evt){
 
 _p2p.prototype.receiveOffer = function(evt){
     var desc = evt.data;
-    //console.log('*p2p*  receiveOffer ',desc);
+    console.log('*p2p*  receiveOffer ',desc,' remotePeerID = ',this.remotePeerID);
     if(!this.remotePeerID && !!desc.f) this.remotePeerID = desc.f;
+    console.log('*p2p*  !pc ',this.pc,', !iscaller: ',this.isCaller);
     if(!this.pc && !this.isCaller) {
         if(this.createPeerConnection()){
             this.pc.addStream(this.stream);
@@ -77,42 +81,63 @@ _p2p.prototype.receiveOffer = function(evt){
     }
     var own = this;
     this.pc.setRemoteDescription(new RTCSessionDescription(desc));
-    this.pc.createAnswer(
-        desc => {own.setLocalAndSendMessage(desc);}, // success
-        err => {own.onCreateSessionDescriptionError(err);} // error
-    );
+    
+    this.pc.createAnswer()
+    .then(desc => {own.setLocalAndSendMessage(desc);}) // success
+    .catch(err => {own.onCreateSessionDescriptionError(err);}); // error
 }
 
 _p2p.prototype.receiveAnswer = function(evt){
     var desc = evt.data;
-    //console.log('*p2p*  receiveAnswer ',desc);
+    console.log('*p2p*  receiveAnswer ',desc);
     if(this.remotePeerID != desc.f) return;//not the droid were looking for.
     this.pc.setRemoteDescription(new RTCSessionDescription(desc));
 }
 
 _p2p.prototype.createPeerConnection = function(){
     console.log('*p2p*  createPeerConnection ');
+    //if(!!this.pc) return true;
     try {
         var own = this;
+        console.log('RTCPeerConnection servers:  ',this.servers);
         this.pc = new RTCPeerConnection(this.servers);
         this.pc.onicecandidate = function(evt) {
             //send to peer 
-            var candidate = evt.candidate;
-            if(!!candidate){
+            var cand = evt.candidate;
+            if(!cand) return;
+            if(own.forceTurn && cand.candidate.indexOf('typ relay') == -1) {
+                cand = null;
+            } else {
+                //console.log('Is Turn: ',own.forceTurn,' Candidate: ',cand);
                 own.sig.sendMessage({
                     type:'candidate',
-                    candidate: candidate.candidate,
-                    sdpMid: candidate.sdpMid,
-                    sdpMLineIndex: candidate.sdpMLineIndex
+                    candidate: cand.candidate,
+                    sdpMid: cand.sdpMid,
+                    sdpMLineIndex: cand.sdpMLineIndex
                 }, own.remotePeerID);
             }
         }
-        this.pc.onaddstream = function(evt) {
+        this.pc.onaddstream = evt => {
             console.log('*p2p*  onaddstream ',evt);
             own.addStream(evt.stream);//remoteStreams
         }
-        this.pc.onremovestream = function(evt) {
-            console.log('*p2p*  onremovestream ',evt);
+        this.pc.onremovestream = evt => console.log('*p2p*  onremovestream ',evt);
+        this.pc.onconnectionstatechange = evt => console.log("*p2p*  onconnectionstatechange: " + own.pc.connectionState);
+        this.pc.oniceconnectionstatechange = evt => {
+            console.log("*p2p*  oniceconnectionstatechange: " + own.pc.iceConnectionState);
+
+            switch(own.pc.iceConnectionState){
+                case 'checking':
+                    break;
+                case 'connected':
+                    break;
+                case 'disconnected':
+                    break;
+                case 'closed':
+                    own.pc = null;
+                    console.log('pc: ',own.pc);
+                    break;
+            }
         }
         return true;
     } catch (e) {
@@ -125,22 +150,25 @@ _p2p.prototype.hangup = function(callId) {
     var stream = this.remoteStreams[callId];
     this.pc.close();
     this.remoteStreams[callId] = null;
+    this.remotePeerID = null;
     //if no streams close and nulify pc.
-    this.pc = null;
-    this.emit('peer.disconnect', callId);
+    //this.pc = null;
 }
 
 _p2p.prototype.addStream = function(remoteStream) {
     this.remoteStreams[this.remotePeerID] = remoteStream;
-    this.emit('peer.connect.success', this.remotePeerID);
+    this.emit(this.peerConnSuccess, this.remotePeerID);
 }
+
 _p2p.prototype.getLiveStream = function(remotePeerID) {
     return this.remoteStreams[remotePeerID];
 }
+
 _p2p.prototype.setLocalAndSendMessage = function(sessionDescription) {
     console.log('*p2p*  setLocalAndSendMessage sending message', sessionDescription);
     this.pc.setLocalDescription(sessionDescription);
     //sendMessage(sessionDescription);
+    console.log('sendMessage for: ',this.remotePeerID);
     this.sig.sendMessage(sessionDescription, this.remotePeerID);
 }
 
@@ -151,7 +179,7 @@ _p2p.prototype.onCreateSessionDescriptionError = function(error) {
 /* EVENTS */
 
 _p2p.prototype.on = function(sEvent,cbFunc){
-    //console.log('*p2p*  on ',sEvent);
+    //console.log('*p2p*  on ',sEvent,', func: '+cbFunc);
     if(!sEvent || !cbFunc) {
         console.log('error:  missing arguments for on event.');
         return false;

@@ -26,8 +26,6 @@
 if(!$xirsys) var $xirsys = new Object();
 var _ice = $xirsys.ice = function (apiUrl, info) {
     this.apiUrl = !!apiUrl ? apiUrl : '/webrtc';
-    //info can have TURN only filter.
-    //console.log('*ice*  constructor: ',this.apiUrl);
     this.evtListeners = {};
     this.iceServers;
     if(!!this.apiUrl){
@@ -45,7 +43,7 @@ _ice.prototype.doICE = function () {
         if(xhr.readyState == 4 && xhr.status == 200){
             var res = JSON.parse(xhr.responseText);
             console.log('*ice*  response: ',res);
-            own.iceServers = own.urlToUrls(res.v.iceServers);
+            own.iceServers = own.filterPaths(res.v.iceServers);
             
             own.emit(own.onICEList);
         }
@@ -54,9 +52,10 @@ _ice.prototype.doICE = function () {
     xhr.send();
 }
 
-//check for depricated RTCIceServer url property, needs to be urls now.
-_ice.prototype.urlToUrls = function(arr){
+//check for depricated RTCIceServer "url" property, needs to be "urls" now.
+_ice.prototype.filterPaths = function(arr){
     var l = arr.length, i;
+    var a = [];
     for(i=0; i<l; i++){
         var item = arr[i];
         var v = item.url;
@@ -64,8 +63,9 @@ _ice.prototype.urlToUrls = function(arr){
             item.urls = v;
             delete item.url;
         }
+        a.push(item);
     }
-    return arr;
+    return a;
 }
 
 _ice.prototype.on = function(sEvent,cbFunc){
