@@ -47,9 +47,8 @@
         setup();
     }
 
-
+    // Click handlers setup
     function setup() {
-        // Click handlers setup
         $('#make-call').click(function(){
             // Initiate a call!
             var call = peer.call($('#callto-id').val(), window.localStream);

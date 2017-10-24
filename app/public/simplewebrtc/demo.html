@@ -2,7 +2,7 @@
 <!-- saved from url=(0034)https://simplewebrtc.com/demo.html -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>SimpleWebRTC Demo</title>
-        <link rel="stylesheet" type="text/css" href="//cloud.typography.com/7773252/764742/css/fonts.css" />
+        <link rel="stylesheet" type="text/css" href="css/fonts.css" />
         <link rel="stylesheet" href="css/style.min.css">
         <link rel="icon" type="image/png" href="img/favicon.png">
         <style>
@@ -75,44 +75,47 @@
         <script type="text/javascript" src="./js/xirsys-ice.js"></script>
         <script src="simplewebrtc.bundle.js"></script>
         <script>
-
             var ice;
-            function requestICE(cb){
+            $( function(){
                 if(!ice){
                     ice = new $xirsys.ice('/webrtc');
                     ice.on(ice.onICEList, function (evt){
                         if(evt.type == ice.onICEList){
-                            //create(ice.iceServers);
-                            var xirsysServers = ice.iceServers, iceServers = [], peerConnectionConfig;
-                            for (var serverId in xirsysServers) {
-                                var server = xirsysServers[serverId],newserver = {};
-                                for (var prop in server) {
-                                    if (prop === "url") {
-                                        newserver["urls"] = server[prop];
-                                    } else {
-                                        newserver[prop] = server[prop];
-                                    }
+                            formatPeerConnectionConfig(ice.iceServers, function(error, data){
+                                if(error){
+                                    return;
                                 }
-                                iceServers.push(newserver);
-                            }
-                            peerConnectionConfig = iceServers.length > 0 ? { "iceServers": iceServers } : null;
-                            if(peerConnectionConfig !=null){
-                                cb(null, { peerConnectionConfig: peerConnectionConfig });
-                            }else{
-                                cb({message: 'error retrieving ice servers'}, null);
-                            }
+                                start(data);
+                            });
                         }
                     });
                 }
-            }
-
-            requestICE(function(error, data){
-                console.log()
-                if(error){
-                 return;
-                }
-                start(data.peerConnectionConfig);
             });
+
+
+            function formatPeerConnectionConfig(servers, cb){
+                var xirsysServers = servers, iceServers = [], peerConnectionConfig;
+
+                $.each(xirsysServers, function( key, value ) {
+                    console.log(key + ": " + value);
+                    var server = value,newserver = {};
+                    for (var prop in server) {
+                        if (prop === "url") {
+                            newserver["urls"] = server[prop];
+                        } else {
+                            newserver[prop] = server[prop];
+                        }
+                    }
+                    iceServers.push(newserver);
+                });
+
+                peerConnectionConfig = iceServers.length > 0 ? { "iceServers": iceServers } : null;
+                if(peerConnectionConfig != null){
+                    cb(null, peerConnectionConfig );
+                }else{
+                    cb({message: 'error formatting ice servers'}, null);
+                }
+            }
 
             function start(data){
                 // apply the request ice server urls
@@ -283,9 +286,9 @@
                 } else {
                     $('form').submit(function () {
                         var val = $('#sessionInput').val().toLowerCase().replace(/\s/g, '-').replace(/[^A-Za-z0-9_\-]/g, '');
+
                         webrtc.createRoom(val, function (err, name) {
                             console.log(' create room cb', arguments);
-
                             var newUrl = location.pathname + '?' + name;
                             if (!err) {
                                 history.replaceState({foo: 'bar'}, null, newUrl);
