@@ -163,7 +163,7 @@ _sig.prototype.sendMessage = function(msg, toPeer){
         p: {msg:msg}
     }
     if(!!toPeer) pkt.m.t = toPeer;
-    //console.log('sendMessage pkt: ',pkt);
+    //console.log('*signal*  sendMessage pkt: ',pkt);
     this.sig.send(JSON.stringify(pkt));
 }
 
@@ -191,7 +191,6 @@ _sig.prototype.off = function(sEvent,cbFunc){
     //console.log('*signal*  remove event: ',sEvent,', func: ',cbFunc);
     this.sig.removeEventListener(sEvent,cbFunc);
 }
-
 _sig.prototype.emit = function(sEvent, data){
     var e  = new MessageEvent(sEvent,{data: data});
     this.sig.dispatchEvent(e);//, data
