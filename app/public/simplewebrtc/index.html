@@ -38,54 +38,15 @@
 <div id="remotes"></div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 <script src="./out/simplewebrtc.bundle.js"></script>
-<script src="./js/xirsys-ice.js"></script>
 <script>
-    var ice;
     $( function(){
-        if(!ice){
-            ice = new $xirsys.ice('/webrtc');
-            ice.on(ice.onICEList, function (evt){
-                if(evt.type == ice.onICEList){
-                    formatPeerConnectionConfig(ice.iceServers, function(error, data){
-                        if(error){
-                            return;
-                        }
-                        start(data);
-                    });
-                }
-            });
-        }
+        start("https://localhost:9004/");
     });
-
-
-    function formatPeerConnectionConfig(servers, cb){
-        var xirsysServers = servers, iceServers = [], peerConnectionConfig;
-
-        $.each(xirsysServers, function( key, value ) {
-            console.log(key + ": " + value);
-            var server = value,newserver = {};
-            for (var prop in server) {
-                if (prop === "url") {
-                    newserver["urls"] = server[prop];
-                } else {
-                    newserver[prop] = server[prop];
-                }
-            }
-            iceServers.push(newserver);
-        });
-
-        peerConnectionConfig = iceServers.length > 0 ? { "iceServers": iceServers } : null;
-        if(peerConnectionConfig != null){
-            cb(null, peerConnectionConfig );
-        }else{
-            cb({message: 'error formatting ice servers'}, null);
-        }
-    }
 
     function start(data) {
         // grab the room from the URL
         var room = location.search && location.search.split('?')[1];
-
+        console.log('start ',data);
         // create our webrtc connection
         var webrtc = new SimpleWebRTC({
             // the id/element dom element that will hold "our" video
@@ -95,13 +56,15 @@
             // immediately ask for camera access
             autoRequestMedia: true,
             debug: false,
-            detectSpeakingEvents: true
+            detectSpeakingEvents: true,
+            url: data
         });
 
         // when it's ready, join if we got a room from the URL
         webrtc.on('readyToCall', function () {
             // you can name it anything
             if (room) webrtc.joinRoom(room);
+            console.log(webrtc.config.peerConnectionConfig);
         });
 
         function showVolume(el, volume) {
