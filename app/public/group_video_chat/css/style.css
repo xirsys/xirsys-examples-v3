@@ -1,0 +1,47 @@
+body {
+	font-family: helvetica, arial, verdana, sans-serif;
+	background-color: #454547;
+}
+
+.container {
+	padding-bottom: 100px;
+	color: white;
+	text-align: center;
+}
+
+#callIDView {
+	margin-bottom: 30px;
+}
+#callID {
+    color: #fff;
+	text-align: center;
+    background-color: #000;
+    border-radius: 0;
+	border: none;
+	height: 40px;
+}
+#isTURN {
+	border: none;
+    height: 40px;
+}
+#isTURN label {
+	font-weight: 400;
+	margin: 0;
+	margin-left: 5px;
+}
+
+.jumbotron {
+	padding: 40px;
+}
+.vid-view {
+	padding-top:20px;
+	padding-bottom:20px;
+}
+.vid-obj{
+	max-width: 744px;
+	width: 100%;
+	height: auto;
+}
+#camBox {
+	background-color: #000;
+}
