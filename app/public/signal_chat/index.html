@@ -3,66 +3,11 @@
 <head>
 	<title>Xirsys Examples - Signal Chat</title>
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
-	<style type="text/css">
-		body {
-			background-color: #454547;
-		}
-		.container {
-			padding-bottom: 20px;
-		}
-		.jumbotron {
-			padding: 40px;
-		}
-		h3 {
-			color: white;
-			padding-bottom: 20px;
-		}
-		.panel {
-			margin-bottom: 18px;
-		}
-		.panel-heading {
-			height: 50px;
-    		padding-top: 15px;
-		}
-		#msgView {
-			height: 270px;
-			overflow-y: scroll;
-		}
-
-		#sendView {
-			height: 50px;
-		}
-		#sendInput {
-			height: 50px;
-		}
-		#sendBtn {
-			height: 50px;
-		}
-
-		#usersView {
-			height: 340px;
-			overflow-y: scroll;
-		}
-		.userLabel input {
-			margin-right: 5px;
-		}
-		#msgHist .private-msg {
-			background-color: #EAFEEA;
-		}
-		.list-group-item:first-child, .list-group-item:last-child {
-			border-radius: 0;
-		}
-		.list-group-item {
-			border: none;
-			border-bottom: 1px solid #ddd;
-			margin-bottom: 0;
-		}
-	</style>
+	<link rel="stylesheet" type="text/css" href="/signal_chat/css/style.css"></link>
 </head>
 <body>
 	<section class="jumbotron">
-		<h1>Xirsys Signaling Sample</h1>
+		<h1>Xirsys Signaling Example</h1>
 		<p>Uses Xirsys Signaling to create a simple chat.</p>
 	</section>
 
@@ -128,55 +73,21 @@
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
 	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
 	crossorigin="anonymous"></script>
-
+	<!-- XIRSYS -->
+    <script src="/lib/xirsys-signal.js"></script>
+	
 	<script>
 		//create simple random user id
 		var userName;// Username can come from URL add /index.html?name=User1
-		var tmpToken = '';//temporary authorization token
-		var host = '';//validated signal host
 		var sig;//signal instance.
-		var heartbeat;//keeps signal alive.
 		var privateId;//holds the id/username of the private chat user.
 		var channelPath;//channel path.
-		
-		//get temporary token to connect to signaling server.
-		function doToken(){
-			console.log('PUT doToken to /webrtc/_token?k='+userName);
-			$.ajax({
-				url: '/webrtc/_token?k='+userName,
-				type: 'PUT',
-				dataType: 'json',
-				error: function(data) {console.log('error: ', data);},
-				success: function(data) {
-					tmpToken = data.v;
-					console.log('token: ',tmpToken);
-					doSignal();
-				}
-			});
-		}
-
-		//get valid signaling host.
-		function doSignal(){
-			$.ajax({
-				url: '/webrtc/_host?type=signal&k='+userName,
-				type: 'GET',
-				dataType: 'json',
-				error: function(data) { console.log('error: ', data);},
-				success: function(data) {
-					host = data.v +'/v2/'+ tmpToken;
-					console.log('signal host: ',host);
-					setupSocket();
-				}
-			});
-		}
 
 		//setup socket to signaling server.
-		function setupSocket(){
-			sig = new WebSocket(host);
-			sig.addEventListener('open', evt => {  startHeart(); });//notify when connection is open
-			sig.addEventListener('close', evt => {  console.log('signal closed!'); });//notify when connection closed
-			//notify when a message is received from signal network.
-			sig.addEventListener('message', msg => { 
+		function doSignal(){
+			console.log('doSignal()');
+			sig = new $xirsys.signal( '/webrtc', userName );
+			sig.on('message', msg => {
 				var pkt = JSON.parse(msg.data);
 				console.log('signal message! ',pkt);
 				var payload = pkt.p;//the actual message data sent 
@@ -305,7 +216,7 @@
 
 		//Remove single user in list
 		function onUserMsg(payload, frmPeer, toPeer){
-			var msg = payload.message;
+			var msg = payload.msg;
 			console.log('onUserMsg ' + frmPeer + (!!toPeer ? ' to ' + toPeer : '') + ': ' + msg);
 			var $hist = $('#msgHist');
 			if( !!toPeer ){
@@ -317,27 +228,12 @@
 			view.scrollTop = view.scrollHeight;
 		}
 
-		// User event, sends user message.
 		function sendMessage(msg, toPeer){
 			if(msg == undefined || msg.length < 1) return;
-			var pkt = {
-				t: "u", // user message service
-				m: {
-					f: channelPath + userName,
-					o: 'message'
-				},
-				p: {message:msg}
-			}
-			if(!!toPeer) pkt.m.t = toPeer;
-			console.log('sendMessage pkt: ',pkt);
-			sig.send(JSON.stringify(pkt));
+			
+			console.log('sendMessage msg: ',msg);
+			var pkt = sig.sendMessage(msg, toPeer);
 			return pkt;
-		}
-
-		//Keeps pinging signal server to keep connection alive.
-		function startHeart(){
-			console.log('startHeart');
-			heartbeat = setInterval(function () {sig.send('ping');}, 800);
 		}
 
 		function getURLParameter(name) {
@@ -365,7 +261,8 @@
 				userName = guid();
 			}
 			console.log('userName: ',userName);
-			doToken();
+			//doToken();
+			doSignal();
 		});
 	</script>
 

@@ -1,0 +1,53 @@
+body {
+	background-color: #454547;
+}
+.container {
+	padding-bottom: 20px;
+}
+.jumbotron {
+	padding: 40px;
+}
+h3 {
+	color: white;
+	padding-bottom: 20px;
+}
+.panel {
+	margin-bottom: 18px;
+}
+.panel-heading {
+	height: 50px;
+	padding-top: 15px;
+}
+#msgView {
+	height: 270px;
+	overflow-y: scroll;
+}
+
+#sendView {
+	height: 50px;
+}
+#sendInput {
+	height: 50px;
+}
+#sendBtn {
+	height: 50px;
+}
+
+#usersView {
+	height: 340px;
+	overflow-y: scroll;
+}
+.userLabel input {
+	margin-right: 5px;
+}
+#msgHist .private-msg {
+	background-color: #EAFEEA;
+}
+.list-group-item:first-child, .list-group-item:last-child {
+	border-radius: 0;
+}
+.list-group-item {
+	border: none;
+	border-bottom: 1px solid #ddd;
+	margin-bottom: 0;
+}

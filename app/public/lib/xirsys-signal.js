@@ -40,7 +40,7 @@ var _sig = $xirsys.signal = function (apiUrl, userName, info ) {
 
     this.userName = !!userName ? userName : null;
     this.apiUrl = !!apiUrl ? apiUrl : '/webrtc';
-    console.log('*signal*  constructed');
+    //console.log('*signal*  constructed');
     if(!!this.userName && !!this.apiUrl){
         this.doToken();//first get our token.
     }
@@ -67,7 +67,7 @@ _sig.prototype.doToken = function(){
 }
 
 _sig.prototype.doSignal = function(){
-    console.log('GET doSignal to '+this.apiUrl+'/_host?type=signal&k='+this.userName);
+    console.log('*signal*  GET doSignal to '+this.apiUrl+'/_host?type=signal&k='+this.userName);
     var own = this;
     $.ajax({
         url: this.apiUrl+'/_host?type=signal&k='+this.userName,
@@ -148,7 +148,7 @@ _sig.prototype.setupSocket = function(){
                 break;
         }
     });
-    console.log('sig:  ',this.sig);
+    //console.log('sig:  ',this.sig);
 }
 // User event, sends user message.
 _sig.prototype.sendMessage = function(msg, toPeer){
@@ -165,6 +165,8 @@ _sig.prototype.sendMessage = function(msg, toPeer){
     if(!!toPeer) pkt.m.t = toPeer;
     //console.log('*signal*  sendMessage pkt: ',pkt);
     this.sig.send(JSON.stringify(pkt));
+    
+    return pkt;
 }
 
 //Keeps pinging signal server to keep connection alive.
