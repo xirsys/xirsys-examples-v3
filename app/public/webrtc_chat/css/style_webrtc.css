@@ -101,6 +101,14 @@ body {
 	.chat-msg.msg-alert {
 		background-color: #F7AEB0;
 	}
+	hr {
+		border-color: #ABABAB;
+		border-width: 0.5px;
+	}
+	.chat-linebreak {
+		font-size: 11px;
+		color: #777;
+	}
 
 /*Chat send field*/
 
@@ -174,6 +182,8 @@ body {
     letter-spacing: 1px;
 	cursor: pointer; 
 	cursor: hand;
+	border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 
 .sign-out {
@@ -246,6 +256,18 @@ body {
 	background-image: url('../images/chat-on.png');
 	background-repeat: no-repeat;
     background-position: center center;
+}
+
+.alert-sm {
+	background-image: url('../images/alert_sm.png');
+	background-repeat: no-repeat;
+	background-position: center center;
+    position: absolute;
+	height: 20px;
+    width: 20px;
+    right: -5px;
+	top: -5px;
+	visibility: hidden;
 }
 
 .brand-logo {
@@ -592,5 +614,6 @@ section.minor-box.box-standby {
 	cursor: pointer; 
 	cursor: hand;
 	border: none;
-    width: 65px;
+	width: 65px;
+	border-radius: 0;
 }

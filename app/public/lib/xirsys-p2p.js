@@ -39,15 +39,27 @@ var _p2p = $xirsys.p2p = function (signal, mediaStream, servers, info) {
         this.sig.on('answer', evt => { own.receiveAnswer(evt); });
     }
     this.servers = !!servers ? servers : {};
-    this.forceTurn = !!info.forceTurn ? info.forceTurn : false;
+    this.forceTurn = info.forceTurn != null ? info.forceTurn : false;
     this.stream = mediaStream;
     this.remotePeerID;
     this.remoteStreams = {};
 
     this.isCaller;//true / false
+    this.autoAnswer = info.autoAnswer != null ? info.autoAnswer : true;
 }
 
 _p2p.prototype.peerConnSuccess = 'peer.connect.success';
+_p2p.prototype.peerConnRequest = 'peer.connect.request';
+_p2p.prototype.iceDisconnected = 'peer.connect.disconnected';
+
+_p2p.prototype.close = function(){
+    if(this.pc) {
+        this.pc.close();
+    }
+    this.remoteStreams = {};
+    this.remotePeerID = null;
+    this.isCaller = null;
+}
 
 _p2p.prototype.callPeer = function(custID){
     console.log('*p2p*  callPeer ',custID);
@@ -57,21 +69,36 @@ _p2p.prototype.callPeer = function(custID){
         this.remotePeerID = custID;
         this.pc.addStream(this.stream);
         this.pc.createOffer()
-        .then(desc => {own.setLocalAndSendMessage(desc);}) // success
-        .catch(err => {own.onCreateSessionDescriptionError(err);}); // error
+            .then(desc => {own.setLocalAndSendMessage(desc);}) // success
+            .catch(err => {own.onCreateSessionDescriptionError(err);}); // error
     }
 }
 
 _p2p.prototype.receiveCandidate = function(evt){
+    if(!this.pc) return false;
     var iceCandidate = evt.data;
     //console.log('*p2p*  receiveCandidate ',iceCandidate);
     var rtcIceCandidate = new RTCIceCandidate(iceCandidate);
     this.pc.addIceCandidate(rtcIceCandidate);
 }
 
-_p2p.prototype.receiveOffer = function(evt){
+//user calles to accept offer when this has autoAnswer false
+_p2p.prototype.acceptRequest = function(offer){
+    //Pass offer to method with true which tells method offer was accepted.
+    this.receiveOffer(offer,true);
+}
+
+_p2p.prototype.receiveOffer = function(evt,isVerfied){
+    var verified = isVerfied == true;
     var desc = evt.data;
-    console.log('*p2p*  receiveOffer ',desc,' remotePeerID = ',this.remotePeerID);
+    console.log('*p2p*  receiveOffer ',desc,' remotePeerID = ',this.remotePeerID,'autoAnswer',this.autoAnswer);
+    //if autoAnser is false, and this has not been verified, stop and emit request event.
+    if(!this.autoAnswer && !verified){
+        console.log('needs verification!');
+        this.emit(this.peerConnRequest, evt.data);
+        return;
+    }
+    //if autoAnser is false and has been verfied, OR autoAnswer is true then connect us.
     if(!this.remotePeerID && !!desc.f) this.remotePeerID = desc.f;
     console.log('*p2p*  !pc ',this.pc,', !iscaller: ',this.isCaller);
     if(!this.pc && !this.isCaller) {
@@ -83,8 +110,8 @@ _p2p.prototype.receiveOffer = function(evt){
     this.pc.setRemoteDescription(new RTCSessionDescription(desc));
     
     this.pc.createAnswer()
-    .then(desc => {own.setLocalAndSendMessage(desc);}) // success
-    .catch(err => {own.onCreateSessionDescriptionError(err);}); // error
+        .then(desc => {own.setLocalAndSendMessage(desc);}) // success
+        .catch(err => {own.onCreateSessionDescriptionError(err);}); // error
 }
 
 _p2p.prototype.receiveAnswer = function(evt){
@@ -132,6 +159,9 @@ _p2p.prototype.createPeerConnection = function(){
                 case 'connected':
                     break;
                 case 'disconnected':
+                    own.emit(own.iceDisconnected, own.remotePeerID);
+                    break;
+                case 'failed':
                     break;
                 case 'closed':
                     own.pc = null;
@@ -147,10 +177,12 @@ _p2p.prototype.createPeerConnection = function(){
 }
 
 _p2p.prototype.hangup = function(callId) {
-    var stream = this.remoteStreams[callId];
+    console.log('*p2p*  hangup',callId);
+    //var stream = this.remoteStreams[callId];
     this.pc.close();
     this.remoteStreams[callId] = null;
     this.remotePeerID = null;
+    this.isCaller = false;
     //if no streams close and nulify pc.
     //this.pc = null;
 }
@@ -158,6 +190,7 @@ _p2p.prototype.hangup = function(callId) {
 _p2p.prototype.addStream = function(remoteStream) {
     this.remoteStreams[this.remotePeerID] = remoteStream;
     this.emit(this.peerConnSuccess, this.remotePeerID);
+    this.isCaller = false;
 }
 
 _p2p.prototype.getLiveStream = function(remotePeerID) {
@@ -173,7 +206,7 @@ _p2p.prototype.setLocalAndSendMessage = function(sessionDescription) {
 }
 
 _p2p.prototype.onCreateSessionDescriptionError = function(error) {
-  console.log('Failed to create session description: ', error);
+    console.log('Failed to create session description: ', error);
 }
 
 /* EVENTS */
