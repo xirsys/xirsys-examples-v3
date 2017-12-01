@@ -49,6 +49,9 @@ var _sig = $xirsys.signal = function (apiUrl, userName, info ) {
 _sig.prototype.ver = 'v2';
 _sig.prototype.keepAliveInt = 800;
 
+_sig.prototype.close = function(){
+    if(this.sig) this.sig.close();
+}
 
 _sig.prototype.doToken = function(){
     console.log('*signal*  PUT doToken to '+this.apiUrl+'/_token?k='+this.userName);
@@ -93,6 +96,7 @@ _sig.prototype.setupSocket = function(){
         clearInterval(own.heartbeat);
         own.heartbeat = null;
         console.log('signal closed!');
+        own.sig = null;
     });
     
     //add pending listeners to signaling object.
