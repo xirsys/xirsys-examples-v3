@@ -71,7 +71,7 @@ function doICE(){
     if(!ice){
         //var isTURN = getURLParameter("isTURN") == 'true';//get force turn var.
         //console.log('isTURN ',isTURN);
-        ice = new $xirsys.ice('/webrtc')//,{turnOnly:isTURN});
+        ice = new $xirsys.ice('https://oidc.noe.com:3443/webrtc')//,{turnOnly:isTURN});
         ice.on(ice.onICEList, onICE);
     }
 }
