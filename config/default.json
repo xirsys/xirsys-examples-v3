@@ -1,14 +1,12 @@
 {
   "xirsys": {
-    "gateway": "us.xirsys.com",
+    "gateway": "global.xirsys.net",
     "info": {
       "ident": "< Your Account Ident >",
       "secret": "< Your Account Secret >",
-      "channel": "< Your Account Channel Path >",
-      "secure": "true"
+      "channel": "< Your Account Channel Path >"
     },
     "allowedServices": ["/_token", "/_host", "/_data", "/_ns", "/_turn"],
-    // allow client side request to override server-side defined channel
     "overrideAllowedChannel": false
   },
   "host":{
