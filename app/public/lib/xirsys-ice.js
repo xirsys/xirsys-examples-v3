@@ -26,6 +26,7 @@
 if(!$xirsys) var $xirsys = new Object();
 var _ice = $xirsys.ice = function (apiUrl, info) {
     this.apiUrl = !!apiUrl ? apiUrl : '/webrtc';
+    this.info = info || {};
     this.evtListeners = {};
     this.iceServers;
     if(!!this.apiUrl){
@@ -48,7 +49,8 @@ _ice.prototype.doICE = function () {
             own.emit(own.onICEList);
         }
     }
-    xhr.open("PUT", this.apiUrl+"/_turn", true);
+    var path = this.info.channel ? this.apiUrl+"/_turn"+this.info.channel : this.apiUrl+"/_turn";
+    xhr.open("PUT", path, true);
     xhr.send();
 }
 

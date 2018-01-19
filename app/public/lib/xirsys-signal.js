@@ -26,7 +26,7 @@
 if(!$xirsys) var $xirsys = new Object();
 var _sig = $xirsys.signal = function (apiUrl, userName, info ) {
     if(!info) info = {};
-
+    this.info = info;
     //internal values
     this.sig = null;//local signal object.
     this.tmpToken;//authorized token for signal calls
@@ -36,7 +36,7 @@ var _sig = $xirsys.signal = function (apiUrl, userName, info ) {
     this.evtListeners = {};
 
     //path to channel we are sending data to.
-    this.channelPath = !!info.channelPath ? info.channelPath : '';
+    this.channelPath = !!info.channel ? info.channel : '';
 
     this.userName = !!userName ? userName : null;
     this.apiUrl = !!apiUrl ? apiUrl : '/webrtc';
@@ -56,8 +56,9 @@ _sig.prototype.close = function(){
 _sig.prototype.doToken = function(){
     console.log('*signal*  PUT doToken to '+this.apiUrl+'/_token?k='+this.userName);
     var own = this;
+    var path = this.info.channel ? this.apiUrl+"/_token"+this.info.channel+"?k="+this.userName : this.apiUrl+"/_token?k="+this.userName;
     $.ajax({
-        url: this.apiUrl+'/_token?k='+this.userName,
+        url: path,
         type: 'PUT',
         dataType: 'json',
         error: function(data) {console.log('*signal*  error: ', data);},
@@ -72,8 +73,9 @@ _sig.prototype.doToken = function(){
 _sig.prototype.doSignal = function(){
     console.log('*signal*  GET doSignal to '+this.apiUrl+'/_host?type=signal&k='+this.userName);
     var own = this;
+    var path = this.info.channel ? this.apiUrl+'/_host'+this.info.channel+'?type=signal&k='+this.userName :this.apiUrl+'/_host?type=signal&k='+this.userName;
     $.ajax({
-        url: this.apiUrl+'/_host?type=signal&k='+this.userName,
+        url: path,
         type: 'GET',
         dataType: 'json',
         error: function(data) { console.log('*signal*  error: ', data);},
