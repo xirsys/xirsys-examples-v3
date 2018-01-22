@@ -42,17 +42,23 @@ var mediaConstraints = {
     }
 };
 
-var localStream;//local audio and video stream
-var remoteStream;//remote audio and video stream
-var ice;//ice server query.
-var sig;//sigaling
-var peer;//peer connection.
+var localStream,//local audio and video stream
+    remoteStream,//remote audio and video stream
+    ice,//ice server query.
+    sig,//sigaling
+    peer;//peer connection.
 
 /*if url has callid wait for other user in list with id to call
     else if no id in url create a sharable url with this username.*/
-var username;//local username created dynamically.
-var remoteCallID;//remote callid
-var inCall = false;
+var username,//local username created dynamically.
+    remoteCallID,//id of remote user
+    inCall = false,//flag true if user in a call, or false if not.
+    channelPath = '';//set this variable to specify a channel path
+
+//custom: check URL for "ch" var, and set the channel accourdingly
+var ch = decodeURI( (RegExp('ch' + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1] );
+if(ch != 'null' ) channelPath = ch;
+console.log('channel path: ',channelPath);
 
 //if there is no remoteCallID show sharable link to call user.
 
@@ -69,9 +75,7 @@ function callRemotePeer(){
 function doICE(){
     console.log('doICE ');
     if(!ice){
-        //var isTURN = getURLParameter("isTURN") == 'true';//get force turn var.
-        //console.log('isTURN ',isTURN);
-        ice = new $xirsys.ice('/webrtc')//,{turnOnly:isTURN});
+        ice = new $xirsys.ice('/webrtc',{channel:channelPath});
         ice.on(ice.onICEList, onICE);
     }
 }
@@ -92,7 +96,7 @@ function getMyMedia(){
 
 //Get Xirsys Signaling service
 function doSignal(){
-    sig = new $xirsys.signal( '/webrtc', username );
+    sig = new $xirsys.signal( '/webrtc', username,{channel:channelPath} );
     sig.on('message', msg => {
         var pkt = JSON.parse(msg.data);
         //console.log('*index*  signal message! ',pkt);
