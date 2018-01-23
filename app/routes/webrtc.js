@@ -30,8 +30,13 @@ function WebRtc(xirsys) {
     });
     //check request for allowedClientSetChannel
     router.use('/:method/:channel',function (req, res, next){
-        if(xirsys['overrideAllowedChannel'] == true && req.params.channel != null){
-            xirsys.info.channel = req.params.channel;
+        if(xirsys['overrideAllowedChannel'] == true){
+          xirsys.info.channel = req.params.channel != null ? req.params.channel : xirsys.info.channel;
+        }else{
+          req.error = {
+            "s": "error",
+            "v": "channel_override_not_allowed"
+          };
         }
         next();
     });
