@@ -23,16 +23,22 @@
 
 *********************************************************************************/
 
+'use strict';
 //create simple random user id
 var userName;// Username can come from URL add /index.html?name=User1
 var sig;//signal instance.
 var privateId;//holds the id/username of the private chat user.
-var channelPath;//channel path.
+var channelPath;//set this variable to specify a channel path
+
+//custom: check URL for "ch" var, and set the channel accourdingly
+var ch = decodeURI( (RegExp('ch' + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1] );
+if(ch != 'null' ) channelPath = ch;
+console.log('channel path: ',channelPath);
 
 //setup socket to signaling server.
 function doSignal(){
     console.log('doSignal()');
-    sig = new $xirsys.signal( '/webrtc', userName );
+    sig = new $xirsys.signal( '/webrtc', userName, {channel:channelPath} );
     sig.on('message', msg => {
         var pkt = JSON.parse(msg.data);
         console.log('signal message! ',pkt);
@@ -75,8 +81,7 @@ function doSignal(){
 }
 
 //were connected! lets setup the UI for user.
-function initUI()
-{
+function initUI() {
     $('#chatTitle').text('Your Name: ' + userName);
     // handle enter key.
     $('#sendInput').keypress( evt => {

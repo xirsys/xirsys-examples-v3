@@ -62,10 +62,8 @@ var callPeerEl,hangUpEl,localVideoEl,remoteVideoEl,remoteFullScreenEl,
 // Get Xirsys ICE (STUN/TURN)
 function doICE(){
   console.log('doICE ');
-  var isTURN = getURLParameter("isTURN") == 'true';//get force turn var.
-  console.log('isTURN ',isTURN);
   if(!ice){
-    ice = new $xirsys.ice('/webrtc',{channel:channelPath,turnOnly:isTURN});
+    ice = new $xirsys.ice('/webrtc',{channel:channelPath});
     ice.on(ice.onICEList, onICE);
   } else {
     ice.doICE();

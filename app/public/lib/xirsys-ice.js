@@ -25,9 +25,14 @@
 
 if(!$xirsys) var $xirsys = new Object();
 var _ice = $xirsys.ice = function (apiUrl, info) {
+    if(!info) info = {};
+    this.info = info;
     this.apiUrl = !!apiUrl ? apiUrl : '/webrtc';
-    this.info = info || {};
     this.evtListeners = {};
+
+    //path to channel we are sending data to.
+    this.channelPath = !!info.channel ? this.cleanChPath(info.channel) : '';
+
     this.iceServers;
     if(!!this.apiUrl){
         this.doICE();//first get our token.
@@ -37,7 +42,7 @@ var _ice = $xirsys.ice = function (apiUrl, info) {
 _ice.prototype.onICEList = 'onICEList';
 
 _ice.prototype.doICE = function () {
-    console.log('*ice*  doICE: ',this.apiUrl);
+    console.log('*ice*  doICE: ',this.apiUrl+"/_turn"+this.channelPath);
     var own = this;
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function($evt){
@@ -49,7 +54,7 @@ _ice.prototype.doICE = function () {
             own.emit(own.onICEList);
         }
     }
-    var path = this.info.channel ? this.apiUrl+"/_turn"+this.info.channel : this.apiUrl+"/_turn";
+    var path = this.apiUrl+"/_turn"+this.channelPath;
     xhr.open("PUT", path, true);
     xhr.send();
 }
@@ -68,6 +73,16 @@ _ice.prototype.filterPaths = function(arr){
         a.push(item);
     }
     return a;
+}
+
+//formats the custom channel path how we need it.
+_ice.prototype.cleanChPath = function(path){
+    //has slash at front
+    console.log('cleanChPath path recv: '+path);
+    if(path.indexOf('/') != 0) path = '/'+path;
+    if(path.lastIndexOf('/') == (path.length - 1)) path = path.substr(0,path.lastIndexOf('/'));
+    console.log('cleanChPath new path: '+path);
+    return path;
 }
 
 _ice.prototype.on = function(sEvent,cbFunc){

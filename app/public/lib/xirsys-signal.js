@@ -36,8 +36,8 @@ var _sig = $xirsys.signal = function (apiUrl, userName, info ) {
     this.evtListeners = {};
 
     //path to channel we are sending data to.
-    this.channelPath = !!info.channel ? info.channel : '';
-
+    this.channelPath = !!info.channel ? this.cleanChPath(info.channel) : '';
+    
     this.userName = !!userName ? userName : null;
     this.apiUrl = !!apiUrl ? apiUrl : '/webrtc';
     //console.log('*signal*  constructed');
@@ -54,9 +54,9 @@ _sig.prototype.close = function(){
 }
 
 _sig.prototype.doToken = function(){
-    console.log('*signal*  PUT doToken to '+this.apiUrl+'/_token?k='+this.userName);
+    var path = this.apiUrl+"/_token"+this.channelPath+"?k="+this.userName;
+    console.log('*signal*  PUT doToken to '+path);
     var own = this;
-    var path = this.info.channel ? this.apiUrl+"/_token"+this.info.channel+"?k="+this.userName : this.apiUrl+"/_token?k="+this.userName;
     $.ajax({
         url: path,
         type: 'PUT',
@@ -64,6 +64,10 @@ _sig.prototype.doToken = function(){
         error: function(data) {console.log('*signal*  error: ', data);},
         success: function(data) {
             own.tmpToken = data.v;
+            if(own.tmpToken == 'no_namespace') {
+                console.log('*signal*  fail: ', own.tmpToken); 
+                return;
+            }
             console.log('*signal*  token: ',own.tmpToken);
             own.doSignal();
         }
@@ -71,9 +75,9 @@ _sig.prototype.doToken = function(){
 }
 
 _sig.prototype.doSignal = function(){
-    console.log('*signal*  GET doSignal to '+this.apiUrl+'/_host?type=signal&k='+this.userName);
+    console.log('*signal*  GET doSignal to '+this.apiUrl+'/_host'+this.channelPath+'?type=signal&k='+this.userName);
     var own = this;
-    var path = this.info.channel ? this.apiUrl+'/_host'+this.info.channel+'?type=signal&k='+this.userName :this.apiUrl+'/_host?type=signal&k='+this.userName;
+    var path = this.info.channel ? this.apiUrl+'/_host'+this.channelPath+'?type=signal&k='+this.userName :this.apiUrl+'/_host?type=signal&k='+this.userName;
     $.ajax({
         url: path,
         type: 'GET',
@@ -173,6 +177,16 @@ _sig.prototype.sendMessage = function(msg, toPeer){
     this.sig.send(JSON.stringify(pkt));
     
     return pkt;
+}
+
+//formats the custom channel path how we need it.
+_sig.prototype.cleanChPath = function(path){
+    //has slash at front
+    console.log('cleanChPath path recv: '+path);
+    if(path.indexOf('/') != 0) path = '/'+path;
+    if(path.lastIndexOf('/') == (path.length - 1)) path = path.substr(0,path.lastIndexOf('/'));
+    console.log('cleanChPath new path: '+path);
+    return path;
 }
 
 //Keeps pinging signal server to keep connection alive.
