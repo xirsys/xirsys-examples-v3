@@ -7,12 +7,7 @@
       "channel": "< Your Account Channel Path >"
     },
     "allowedServices": ["/_token", "/_host", "/_data", "/_ns", "/_turn"],
-    "overrideAllowedChannel": false,
-    "staticCredentials": {
-      "username": "",
-      "credential": "",
-      "domain": ""
-    }
+    "overrideAllowedChannel": false
   },
   "host":{
     "httpport": 3080,
