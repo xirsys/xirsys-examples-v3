@@ -1,3 +1,5 @@
+//import { setTimeout } from "timers";
+
 /*********************************************************************************
   The MIT License (MIT) 
 
@@ -36,21 +38,38 @@ var _sig = $xirsys.signal = function (apiUrl, userName, info ) {
     this.evtListeners = {};
 
     //path to channel we are sending data to.
-    this.channelPath = !!info.channel ? this.cleanChPath(info.channel) : '';
+    //this.channelPath = !!info.channel ? this.cleanChPath(info.channel) : '';
     
     this.userName = !!userName ? userName : null;
     this.apiUrl = !!apiUrl ? apiUrl : '/webrtc';
     //console.log('*signal*  constructed');
-    if(!!this.userName && !!this.apiUrl){
-        this.doToken();//first get our token.
-    }
+    this.connectTo( !!info.channel ? info.channel : '' );
 }
 
 _sig.prototype.ver = 'v2';
 _sig.prototype.keepAliveInt = 800;
+_sig.prototype.connected = false;
 
 _sig.prototype.close = function(){
+    console.log('close ',this.sig);
+    if(this.heartbeat) this.stopHeart();
     if(this.sig) this.sig.close();
+}
+
+_sig.prototype.connectTo = function(channel){
+    this.channelPath = !!channel ? this.cleanChPath(channel) : '';
+    console.log('connectTo: ',this.channelPath);
+    //if connected stop current, then do new.
+    if(!!this.sig){
+        this.close();
+        var own = this;
+        setTimeout(() => {own.doToken()}, 800);
+    } else if(!!this.apiUrl){//!!this.userName && 
+        this.doToken();//first get our token.
+    } else {
+        console.log('Error: Could connect signal!');
+    }
+    return true;
 }
 
 _sig.prototype.doToken = function(){
@@ -96,13 +115,16 @@ _sig.prototype.setupSocket = function(){
     console.log('*signal*  setupSocket to '+this.host);
     var own = this;
     this.sig = new WebSocket(this.host);
-    this.sig.addEventListener('open', evt => {  own.startHeart(); });//notify when connection is open
+    //notify when connection is open
+    this.sig.addEventListener('open', evt => { 
+        own.startHeart(); 
+        own.connected = true; 
+    });
     //notify when connection closed
     this.sig.addEventListener('close', evt => { 
-        clearInterval(own.heartbeat);
-        own.heartbeat = null;
-        console.log('signal closed!');
-        own.sig = null;
+        if(this.heartbeat) own.stopHeart();
+        own.connected = false;
+        this.sig = null;
     });
     
     //add pending listeners to signaling object.
@@ -117,7 +139,7 @@ _sig.prototype.setupSocket = function(){
     //notify when a message is received from signal network.
     this.sig.addEventListener('message', msg => { 
         var pkt = JSON.parse(msg.data);
-        //console.log('signal message! ',pkt);
+        console.log('*signal*  signal message! ',pkt);
         var payload = pkt.p;//the actual message data sent 
         var meta = pkt.m;//meta object
         var msgEvent = meta.o;//event label of message
@@ -157,21 +179,24 @@ _sig.prototype.setupSocket = function(){
                 }
                 break;
         }
+        own.emit('message', msg.data);
     });
     //console.log('sig:  ',this.sig);
 }
 // User event, sends user message.
-_sig.prototype.sendMessage = function(msg, toPeer){
-    //console.log('*signal*  sendMessage: ',msg,', to: ',toPeer);
+_sig.prototype.sendMessage = function(msg, toPeer, info){
+    if(!info) info = {};
+    console.log('*signal*  sendMessage: ',msg,', to: ',toPeer,' info: ',info);
     if(msg == undefined || msg.length < 1) return;
     var pkt = {
         t: "u", // user message service
         m: {
             f: this.channelPath + this.userName,
-            o: 'message'
+            o: !!info.m_event ? info.m_event : 'message'
         },
         p: {msg:msg}
     }
+    //if its to a peer, add direct message var (t) to meta object.
     if(!!toPeer) pkt.m.t = toPeer;
     //console.log('*signal*  sendMessage pkt: ',pkt);
     this.sig.send(JSON.stringify(pkt));
@@ -182,10 +207,9 @@ _sig.prototype.sendMessage = function(msg, toPeer){
 //formats the custom channel path how we need it.
 _sig.prototype.cleanChPath = function(path){
     //has slash at front
-    console.log('cleanChPath path recv: '+path);
     if(path.indexOf('/') != 0) path = '/'+path;
     if(path.lastIndexOf('/') == (path.length - 1)) path = path.substr(0,path.lastIndexOf('/'));
-    console.log('cleanChPath new path: '+path);
+    //console.log('cleanChPath new path: '+path);
     return path;
 }
 
@@ -196,27 +220,46 @@ _sig.prototype.startHeart = function(){
     var own = this;
     this.heartbeat = setInterval(function () {own.sig.send('ping');}, $xirsys.signal.keepAliveInt);
 }
+_sig.prototype.stopHeart = function(){
+    clearInterval(this.heartbeat);
+    this.heartbeat = null;
+    //this.sig = null;
+    console.log('signal closed!');
+}
 
 //events
 _sig.prototype.on = function(sEvent,cbFunc){
-    //todo set events that we use to dispatch
-    //console.log('*signal*  add event: ',sEvent,', func: ',cbFunc);
-    if( !!this.sig ){
-        this.sig.addEventListener(sEvent,cbFunc);
-    } else {
-        this.pendListeners.push({event:sEvent,f:cbFunc});
-        console.log('pending listeners: ',this.pendListeners);
+    //console.log('*signal*  on ',sEvent,', func: '+cbFunc);
+    if(!sEvent || !cbFunc) {
+        console.log('error:  missing arguments for "on" event.');
+        return false;
     }
+    //if event does not exist create it and give it an array for listeners.
+    if(!this.evtListeners[sEvent]) this.evtListeners[sEvent] = [];
+    //add listener to event.
+    this.evtListeners[sEvent].push(cbFunc);
 }
 _sig.prototype.off = function(sEvent,cbFunc){
-    //todo set events that we use to dispatch
-    //console.log('*signal*  remove event: ',sEvent,', func: ',cbFunc);
-    this.sig.removeEventListener(sEvent,cbFunc);
-}
-_sig.prototype.emit = function(sEvent, data){
-    var e  = new MessageEvent(sEvent,{data: data});
-    this.sig.dispatchEvent(e);//, data
+    if (!this.evtListeners.hasOwnProperty(sEvent)) return false;//end
+
+    var index = this.evtListeners[sEvent].indexOf(cbFunc);
+    if (index != -1) {
+        this.evtListeners[sEvent].splice(index, 1);
+        return true;//else end here.
+    }
+    return false;//else end here.
 }
 
+_sig.prototype.emit = function(sEvent, data){
+    //console.log('*signal*  emit ',sEvent,', func: '+data);
+    var handlers = this.evtListeners[sEvent];
+    if(!!handlers) {
+        var l = handlers.length;
+        for(var i=0; i<l; i++){
+            var item = handlers[i];
+            item.apply(this,[{type:sEvent,data:data}]);
+        }
+    }
+}
 console.log('$xirsys.signal Loaded Successfuly!!!');
 _sig = null;

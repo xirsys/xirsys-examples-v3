@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Xirsys Examples - Signal Chat</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="css/style.css"></link>
+</head>
+<body>
+	<section class="jumbotron">
+		<h1>Xirsys Signaling Example</h1>
+		<p>Uses Xirsys Signaling to create a simple chat.</p>
+	</section>
+
+	<div class="container">
+
+		<section>
+			<div class="row">
+
+				<!-- Left Panel -->
+				<div class="col-lg-3">
+					<h3 id="chatTitle">Welcome</h3>
+					<!-- User Panel -->
+					<div class="panel panel-default">
+						<!-- Header -->
+						<div class="panel-heading"><b>LIVE USERS</b></div>
+
+						<!-- List group -->
+						<div id="usersView">
+							<ul id="usersList" class="list-group">
+								<!--<li class="list-group-item">This is a user</li>-->
+							</ul>
+						</div>
+					</div>
+				</div>
+
+				<!-- Right Panel -->
+				<div class="col-lg-9">
+					<div class="row">
+						<div class="col-lg-10">
+							<div class="row">
+								<div id="roomView" class="dropdown pull-right" >
+									<span id="roomViewTitle">Room: </span>
+									<button id="ddMenu" class="btn btn-default dropdown-toggle" type="button" 
+											data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+										<p id="labelText" >Lobby <span class="caret"></span></p>
+									</button>
+									<ul id="ddMenuList" class="dropdown-menu room-list" aria-labelledby="ddMenu" >
+										<!-- ROOMS LIST -->
+									</ul>
+								</div>
+							</div>
+							
+							<div class="panel panel-default">
+								<!-- Header -->
+								<div class="panel-heading"><b>MESSAGE HISTORY</b></div>
+								<!-- List group -->
+								<div id="msgView">
+									<ul id="msgHist" class="list-group">
+										<!--<li class="list-group-item">This is a message</li>-->
+									</ul>
+								</div>
+							</div>
+
+							<!-- Message Input -->
+							<!--<label id="privateTo"></label>-->
+							<div id="sendView" class="input-group">
+								<span id="privateTo" class="input-group-addon">Public Message</span>
+								<input id="sendInput" type="text" class="form-control" placeholder="Say Hi...">
+								<span class="input-group-btn">
+									<button id="sendBtn" class="btn btn-default btn-block" type="button">Send</button>
+								</span>
+							</div>
+						</div>
+					</div>
+
+				</div><!-- /Right Panel -->
+
+			</div>
+		</section>
+		<!-- MANAGE ROOMS MODAL -->
+		<div id="mdlRooms" class="modal fade" tabindex="-1" role="dialog">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title">MANAGE ROOMS</h4>
+					</div>
+
+					<div class="modal-body">
+						<p>Enter a room name to add, or select a room from list to delete.</p>
+						<div class="input-group input-group-lg">
+							<input id="addRoomText" type="text" class="form-control" placeholder="Room Name: Begin with letter no symbols or spaces." aria-describedby="addRoomBtn">
+							<span id="addRoomBtn" class="input-group-addon"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span></span>
+						</div>
+						<ul id="roomsList" class="list-group">
+							<!-- Room List -->
+						</ul>
+						<button id="deleteRoomBtn" type="button" class="btn btn-default btn-block disabled">Delete</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- LOGIN WINDOW -->
+		<div id="mdlLogin" class="modal fade" tabindex="-1" role="dialog">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title">LOGIN</h4>
+					</div>
+
+					<div class="modal-body">
+						<p>Enter a username to chat.</p>
+						<div class="input-group input-group-lg">
+							<input id="nameText" type="text" class="form-control" placeholder="Alpha numeric characters only." aria-describedby="loginBtn">
+							<span id="loginBtn" class="input-group-addon use-hand">GO</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+	crossorigin="anonymous"></script>
+	<!-- XIRSYS -->
+    <script src="../lib/xirsys-signal.js"></script><!-- handles xirsys signaling -->
+    <script src="../lib/xirsys-channel.js"></script><!-- handles xirsys channel/room creation and deleting -->
+    <script src="../lib/xirsys-data.js"></script><!-- handles xirsys data layer saving/updating/deleting -->
+    <script src="js/main.js"></script><!-- main script -->
+	
+</body>
+</html>

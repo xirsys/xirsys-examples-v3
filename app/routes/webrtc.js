@@ -28,6 +28,17 @@ function WebRtc(xirsys) {
         }
         next();
     });
+    // returns app path to client.
+    router.use('/:method/', function(req, res, next){
+        if(req.params.method != null && req.params.method == '_path'){
+            let path = xirsys['info']['channel'];
+            let o = {s:'ok',v:(!!path ? path : '')};
+            console.log('send path: ',o);
+            res.send(o);
+        } else {
+            next();
+        }
+    });
     //check request for allowedClientSetChannel
     router.use('/:method/:channel',function (req, res, next){
         if(xirsys['overrideAllowedChannel'] == true){
@@ -69,8 +80,14 @@ function WebRtc(xirsys) {
                     "Authorization": "Basic " + new Buffer(xirsys.info.ident+":"+xirsys.info.secret).toString("base64")
                 }
             };
+            if(req.method == 'PUT' || req.method == 'POST'){
+                var js = JSON.stringify(req.body);
+                options.headers['Content-Length'] = js.length;
+                options.headers["Content-Type"] = "application/json";
+                console.warn(req.method," - ",js);
+            }
             //make call to Xirsys API, with modified request. Expect and return response to client.
-            https.request(options, function(httpres) {
+            var h = https.request(options, function(httpres) {
                 var str = '';
                 httpres.on('data', function(data){ str += data; });
                 //error - returns 500 status and formatted response
@@ -82,7 +99,13 @@ function WebRtc(xirsys) {
                     console.log("Requested: ",options.path,"\n : ",str);
                     res.send(str);
                 });
-            }).end();
+            })
+            
+            if(req.method == 'PUT' || req.method == 'POST'){
+                h.write(js);
+            }
+            h.end();
+            //console.log('*h    ',h);
         }
     });
     return router;

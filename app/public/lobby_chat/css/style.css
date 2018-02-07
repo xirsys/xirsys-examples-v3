@@ -1,0 +1,174 @@
+body {
+	background-color: #454547;
+}
+.container {
+	padding-bottom: 20px;
+}
+.jumbotron {
+	padding: 40px;
+}
+h3 {
+	color: white;
+	padding-bottom: 20px;
+}
+.panel {
+	margin-bottom: 18px;
+}
+.panel-heading {
+	height: 50px;
+	padding-top: 15px;
+}
+#msgView {
+	height: 270px;
+	overflow-y: scroll;
+}
+
+#sendView {
+	height: 50px;
+}
+#sendInput {
+	height: 50px;
+}
+#sendBtn {
+	height: 50px;
+}
+
+#usersView {
+	height: 340px;
+	overflow-y: scroll;
+}
+.userLabel input {
+	margin-right: 5px;
+}
+#msgHist .private-msg {
+	background-color: #EAFEEA;
+}
+.list-group-item:first-child, .list-group-item:last-child {
+	border-radius: 0;
+}
+.list-group-item {
+	border: none;
+	border-bottom: 1px solid #ddd;
+	margin-bottom: 0;
+}
+
+#roomView {
+	margin-top: 20px;
+	margin-bottom: 20px;
+	margin-right: 15px;
+}
+
+#roomView #roomViewTitle {
+	color: white;
+	font-size: 24px;
+	font-weight: 500;
+	margin-right: 5px;
+}
+
+#roomView #ddMenu {
+	width: 100px;
+	position:relative;
+	padding-right: 20px;
+}
+
+#roomView #ddMenu .caret{
+	position:absolute;
+	right: 8px;
+	margin-top: 8px;
+}
+
+#roomView ul {
+	padding: 0;
+}
+
+#roomView .divider {
+	margin: 0;
+}
+
+#roomView #ddMenuList {
+	height: 250px;
+	overflow-y: scroll;
+	background-color: #F9F9F9;
+}
+
+.list-item-select {
+	padding: 10px 15px;
+	cursor: pointer;
+	cursor: hand;
+}
+
+.use-hand {
+	cursor: pointer;
+	cursor: hand;
+}
+
+#roomView .mng-room-item-top, #roomView .mng-room-item-btm {
+	background-color: #FCFFC8;
+	border-radius: 0;
+	font-size: 13px;
+}
+
+#roomView .mng-room-item-btm {
+	font-size: 10px;
+	font-weight: 600;
+	text-align: center;
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+}
+
+#roomView #labelText{
+	overflow: hidden;
+	margin-bottom: 0;
+}
+
+#mdlRooms .modal-content {
+	border-radius: 4px;
+    overflow: hidden;
+}
+
+#mdlRooms .modal-header .modal-title {
+	font-size: 14px;
+}
+
+#mdlRooms .modal-header, #mdlRooms .modal-footer {
+	background-color: #f5f5f5;
+}
+
+#mdlRooms .modal-body #addRoomBtn {
+	border-bottom-right-radius: 0;
+	cursor: pointer;
+	cursor: hand;
+	border-bottom: none;
+}
+
+#mdlRooms .modal-body #addRoomText {
+	border-bottom-left-radius: 0;
+	font-size: 14px;
+	background: #ffffe0;
+	border-bottom: none;
+}
+
+#mdlRooms .modal-body #addRoomText:focus {
+	box-shadow: none;
+	border-color: #ccc;
+}
+
+#mdlRooms .modal-body #roomsList {
+	border: #ddd 1px solid;
+	height: 300px;
+	overflow-y: scroll;
+	margin-bottom: 0;
+	background-color: #F9F9F9;
+}
+
+#mdlRooms .modal-body #deleteRoomBtn {
+	background-color: #dcdcdc;
+	height: 40px;
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+#mdlRooms .modal-body .alert {
+	margin-bottom: 10px;
+	margin-top: 10px;
+}

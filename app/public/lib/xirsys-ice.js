@@ -95,8 +95,14 @@ _ice.prototype.on = function(sEvent,cbFunc){
     this.evtListeners[sEvent].push(cbFunc);
 }
 _ice.prototype.off = function(sEvent,cbFunc){
-    //console.log('off');
-    this.evtListeners.push(cbFunc);
+    if (!this.evtListeners.hasOwnProperty(sEvent)) return false;//end
+
+    var index = this.evtListeners[sEvent].indexOf(cbFunc);
+    if (index != -1) {
+        this.evtListeners[sEvent].splice(index, 1);
+        return true;//else end here.
+    }
+    return false;//else end here.
 }
 
 _ice.prototype.emit = function(sEvent, data){
