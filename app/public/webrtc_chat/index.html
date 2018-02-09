@@ -4,7 +4,7 @@
 
 	<link rel="stylesheet" type="text/css" href="css/style_webrtc.css"></link>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-	
+	<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 	<!-- XIRSYS -->
     <script src="../lib/xirsys-ice.js"></script>
     <script src="../lib/xirsys-signal.js"></script>
@@ -46,10 +46,10 @@
 			<!-- Video to Video Window -->
 			<section class="major-box fb-col-item hide-vid">
 				<!-- Remote User Video -->
-				<video id="remote-video" autoplay="autoplay"></video>
+				<video id="remote-video" autoplay muted playsinline></video>
 				<!-- Local User Video -->
 				<section class="minor-box box-standby">
-					<video id="local-video" autoplay="autoplay" muted="true"></video>
+					<video id="local-video" autoplay muted playsinline></video>
 				</section>
 				<!-- Remote Username Label and Hangup Button -->
 				<div id="remote-username">

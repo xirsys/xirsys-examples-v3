@@ -255,7 +255,7 @@ function updateVidView(){
         if(hasv.length == 0){
             camBox.append(
                 '<div id="'+winId+'" class="vid-view">' +
-                    '<video class="vid-obj" autoplay="autoplay"></video>' +
+                    '<video class="vid-obj"  autoplay muted playsinline></video>' +
                 '</div>'
             );
         }
