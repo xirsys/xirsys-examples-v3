@@ -130,7 +130,14 @@
 	<!-- XIRSYS -->
     <script src="../lib/xirsys-signal.js"></script><!-- handles xirsys signaling -->
     <script src="../lib/xirsys-channel.js"></script><!-- handles xirsys channel/room creation and deleting -->
-    <script src="../lib/xirsys-data.js"></script><!-- handles xirsys data layer saving/updating/deleting -->
+	<script src="../lib/xirsys-data.js"></script><!-- handles xirsys data layer saving/updating/deleting -->
+	
+	<script>
+		// You can duplicate this html file to make an admin version with true and a public one with false
+		var createRoomAllowed = true;
+		console.log('Creating rooms is allowed? ',createRoomAllowed);
+	</script>
+
     <script src="js/main.js"></script><!-- main script -->
 	
 </body>

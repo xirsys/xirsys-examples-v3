@@ -53,18 +53,24 @@ function WebRtc(xirsys) {
     });
     //apply channel to request/methods that require it only
     router.use(function (req, res, next) {
+        console.log('Req Channel - URL: ',req.url);
         var methods = ['/_token', '/_turn', '/_subs', '/_data', '/_acc'];
         var path = req.url.split('?').shift();
         var slashIndex = path.indexOf('/', 1);
+        let suffix;//if we have a trailing path, were using custom channels.
         if (slashIndex != -1) {
+          suffix = path.substr(slashIndex);
           path = path.substr(0, slashIndex);
         }
         if(methods.indexOf(path) != -1){
             var arr = req.url.split('?');
-            req.url = arr[0] +"/"+ xirsys.info.channel;
+            //if suffix exists, do not add root channel path, we can assume were overriding channel paths.
+            req.url = arr[0] +"/"+ (!!suffix ? '' : xirsys.info.channel);
             if(arr[1] != null ){
                 req.url = req.url + "?" + arr[1];
             }
+            console.log('has suffix ',suffix);
+            console.log('Method '+path+' - Req URL: ',req.url);
         }
         next();
     });

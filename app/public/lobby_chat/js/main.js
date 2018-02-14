@@ -32,10 +32,13 @@ var userName,// Username can come from URL add /index.html?name=User1
     apiURL='/webrtc',//path to the serverside.
     chManager,//script to create rooms/sub-rooms on your account with the API.
     kvData,//data layer manager.
-    createRoomAllowed = true,// true - will allow user to create/delete rooms, false to disallow.
     allowedChar = new RegExp('[^a-zA-Z0-9]'),//filter room name entries.
     state = 'setup',//state flag for setting things up.
     rooms = [];//list of rooms.
+
+// if variable exists then allow its value, otherwise set a default
+//  true - will allow user to create/delete rooms, false to disallow.  See index.html
+if(!!createRoomAllowed) var createRoomAllowed = true;
 
 //default list items.
 var manageRmLabel = 'Manage Rooms',
