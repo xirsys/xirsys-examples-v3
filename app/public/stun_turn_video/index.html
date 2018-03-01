@@ -28,8 +28,31 @@
 
 		<section class="row">
 			<div id="vid-view" class="col-md-8 col-md-offset-2">
-				<video id="local-video" class="major-box"  autoplay muted playsinline></video>
-				<video id="remote-video" class="major-box hidden"  autoplay muted playsinline></video>
+				<video id="local-video" class="major-box" autoplay muted playsinline></video>
+				<video id="remote-video" class="major-box hidden"  autoplay playsinline></video>
+			</div>
+		</section>
+		<section id="ctrlMenu" class="row">
+			<div class="col-sm-6 col-xs-12 col-sm-offset-3">
+				<div class="btn-group" role="group" aria-label="...">
+					<div class="btn-group dropup" role="group">
+						<button id="camToggle" class="btn btn-default btn-block dropdown-toggle" type="button" id="camDevices" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+							... <span class="caret"></span>
+						</button>
+						<ul id="camList" class="dropdown-menu dropdown-menu-right" aria-labelledby="camDevices">
+							<!-- <li><a class="btn" role="button"></a>Test</li> -->
+							<li><a>No Devices Detected</a></li>
+						</ul>
+					</div>
+					<div class="btn-group dropup" role="group">
+						<button id="micToggle" class="btn btn-default btn-block dropdown-toggle" type="button" id="micDevices" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+							... <span class="caret"></span>
+						</button>
+						<ul id="micList" class="dropdown-menu" aria-labelledby="micDevices">
+							<li><a>No Devices Detected</a></li>
+						</ul>
+					</div>
+				</div>
 			</div>
 		</section>
 	</div>
@@ -40,6 +63,7 @@
 	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
 	crossorigin="anonymous"></script>
 	<!-- XIRSYS -->
+    <script src="../lib/xirsys-media.js"></script>
     <script src="../lib/xirsys-ice.js"></script>
     <script src="../lib/xirsys-signal.js"></script>
     <script src="../lib/xirsys-p2p.js"></script>

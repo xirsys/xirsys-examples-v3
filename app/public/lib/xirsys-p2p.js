@@ -27,7 +27,7 @@ if(!$xirsys) var $xirsys = new Object();
 var _p2p = $xirsys.p2p = function (signal, mediaStream, servers, info) {
     if(!info) info = {};
     //info can have TURN only filter.
-    console.log('*p2p*  constructor - servers: ',servers,', mediaStream: ',mediaStream,', sig: ',signal,', info: ',info);
+    console.log('*p2p*  servers: ',servers,', mediaStream: ',mediaStream,', sig: ',signal,', info: ',info);
     this.evtListeners = {};
     this.pc;//peer connection
 
@@ -60,12 +60,28 @@ _p2p.prototype.close = function(){
     this.remotePeerID = null;
     this.isCaller = null;
 }
-
+//used to update the media and renegociate p2p connection.
+_p2p.prototype.updateMediaStream = function(mediaStream){
+    console.log('*p2p*  updateMediaStream ',mediaStream);
+    
+    this.stream = mediaStream;
+    if(!!this.pc){
+        this.isCaller = true;
+        const own = this;
+        this.pc.addStream(this.stream);
+        this.pc.createOffer()
+            .then(desc => {own.setLocalAndSendMessage(desc);}) // success
+            .catch(err => {own.onCreateSessionDescriptionError(err);}); // error
+    }
+    return true;
+}
+//calls peer @custID and estblishes a p2p connection.
 _p2p.prototype.callPeer = function(custID){
     console.log('*p2p*  callPeer ',custID);
     if(this.createPeerConnection()){
+        //this flag tells our code we are doing the calling.
         this.isCaller = true;
-        var own = this;
+        const own = this;
         this.remotePeerID = custID;
         this.pc.addStream(this.stream);
         this.pc.createOffer()
@@ -146,7 +162,7 @@ _p2p.prototype.createPeerConnection = function(){
         }
         this.pc.onaddstream = evt => {
             console.log('*p2p*  onaddstream ',evt);
-            own.addStream(evt.stream);//remoteStreams
+            own.addRemoteStream(evt.stream);//remoteStreams
         }
         this.pc.onremovestream = evt => console.log('*p2p*  onremovestream ',evt);
         this.pc.onconnectionstatechange = evt => console.log("*p2p*  onconnectionstatechange: " + own.pc.connectionState);
@@ -187,7 +203,7 @@ _p2p.prototype.hangup = function(callId) {
     //this.pc = null;
 }
 
-_p2p.prototype.addStream = function(remoteStream) {
+_p2p.prototype.addRemoteStream = function(remoteStream) {
     this.remoteStreams[this.remotePeerID] = remoteStream;
     this.emit(this.peerConnSuccess, this.remotePeerID);
     this.isCaller = false;

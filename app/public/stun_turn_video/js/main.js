@@ -26,7 +26,7 @@
 'use strict';
 
 // Getting references to page DOM for video calling.
-var localVideoEl = document.getElementById('local-video'),
+const localVideoEl = document.getElementById('local-video'),
     remoteVideoEl = document.getElementById('remote-video'),
     callIdEl = document.getElementById('callID'),
     turnCB = document.getElementById('isTURNcb'),
@@ -37,8 +37,8 @@ var localVideoEl = document.getElementById('local-video'),
 var mediaConstraints = {
     audio: true,
     video: {
-        "min":{"width":"800","height":"600"},
-        "max":{"width":"1024","height":"768"}
+        "min":{"width":"720","height":"360"},
+        "max":{"width":"1280","height":"640"}
     }
 };
 
@@ -46,7 +46,8 @@ var localStream,//local audio and video stream
     remoteStream,//remote audio and video stream
     ice,//ice server query.
     sig,//sigaling
-    peer;//peer connection.
+    peer,//peer connection.
+    media;//cam and mic class
 
 /*if url has callid wait for other user in list with id to call
     else if no id in url create a sharable url with this username.*/
@@ -79,6 +80,7 @@ function doICE(){
         ice.on(ice.onICEList, onICE);
     }
 }
+
 function onICE(evt){
     console.log('onICE ',evt);
     if(evt.type == ice.onICEList){
@@ -89,25 +91,76 @@ function onICE(evt){
 //Get local user media
 function getMyMedia(){
     console.log('getMyMedia()');
-    navigator.mediaDevices.getUserMedia(mediaConstraints)
-    .then(str => {setLocalStream(str); doSignal();})//onSuccess
-    .catch(err => { console.log('Could not get Media: ', err); alert('Could not get Media!! Please check your camera and mic.'); });
+    //setup media
+    if(!media){
+        media = new $xirsys.media();
+        media.on(media.DEVICES_UPDATED, onMediaDevices);//returns list of media devices on local user machine.
+        media.on(media.ON_LOCAL_STREAM, onMediaDevices);//returns a/v stream of local user.
+        //listen for camera changes.
+        $('#ctrlMenu #camList').on('click', e => {
+            let $targ = $(e.target);
+            //if local stream exists, check if we are selecting the same device we currently are using. otherwise this is false.
+            let isDup = !!localStream ? hasMedia($targ.text(),localStream.getVideoTracks()) : false;//false;
+            //console.log('dup ',isDup);
+            if(isDup) return;
+
+            if(typeof(mediaConstraints.video) != 'object') mediaConstraints.video = {};
+            //update mediaConstraints object with new device.
+            mediaConstraints.video.deviceId = {
+                exact: $targ.attr('id')
+            }
+            console.log('*main*  cam selected - mediaConstraints: ',mediaConstraints);
+            getMyMedia();
+        })
+        $('#ctrlMenu #micList').on('click', e => {
+            let $targ = $(e.target);
+            //if local stream exists, check if we are selecting the same device we currently are using. otherwise this is false.
+            let isDup = !!localStream ? hasMedia($targ.text(),localStream.getAudioTracks()) : false;//false;
+            //console.log('dup ',isDup);
+            if(isDup) return;
+
+            if(typeof(mediaConstraints.audio) != 'object') mediaConstraints.audio = {};
+            //update mediaConstraints object with new device.
+            mediaConstraints.audio.deviceId = {
+                exact: $(e.target).attr('id')
+            }
+            console.log('*main*  mic selected - mediaConstraints: ',mediaConstraints);
+            getMyMedia();
+        });
+    }
+    //gets stream object of local users a/v
+    media.getUserMedia(mediaConstraints)
+        .then(
+            str => {
+                console.log('*main*  getUser Media stream: ',str);
+                setLocalStream(str);
+                //create signal if null
+                if(!sig) doSignal();
+                //if the peer is created, update our media
+                if(!!peer) peer.updateMediaStream(localStream);
+            }
+        ).catch(
+            err => {
+                console.log('Could not get Media: ', err);
+                alert('Could not get Media!! Please check your camera and mic.');
+            }
+        );
 }
 
 //Get Xirsys Signaling service
 function doSignal(){
     sig = new $xirsys.signal( '/webrtc', username,{channel:channelPath} );
     sig.on('message', msg => {
-        var pkt = JSON.parse(msg.data);
-        //console.log('*index*  signal message! ',pkt);
-        var payload = pkt.p;//the actual message data sent 
-        var meta = pkt.m;//meta object
-        var msgEvent = meta.o;//event label of message
-        var toPeer = meta.t;//msg to user (if private msg)
-        var fromPeer = meta.f;//msg from user
+        let pkt = JSON.parse(msg.data);
+        //console.log('*main*  signal message! ',pkt);
+        let payload = pkt.p;//the actual message data sent 
+        let meta = pkt.m;//meta object
+        let msgEvent = meta.o;//event label of message
+        let toPeer = meta.t;//msg to user (if private msg)
+        let fromPeer = meta.f;//msg from user
         //remove the peer path to display just the name not path.
         if(!!fromPeer) {
-            var p = fromPeer.split("/");
+            let p = fromPeer.split("/");
             fromPeer = p[p.length - 1];
         }
         switch (msgEvent) {
@@ -118,14 +171,9 @@ function doSignal(){
                 // if we are connecting to a remote user and remote 
                 // user id is found in the list then initiate call
                 if(!!remoteCallID) {
-                    var users = payload.users;
-                    var l = users.length;
-                    for (var i = 0; i < l; i++) {
-                        var user = users[i];
-                        //if this is the user, call them.
-                        if (user === remoteCallID) {
-                            callRemotePeer();
-                        }
+                    let users = payload.users;
+                    if(users.indexOf(remoteCallID) > -1){
+                        callRemotePeer();
                     }
                 }
                 break;
@@ -158,8 +206,8 @@ function onReady(){
 }
 // A peer call started udpate the UI to show remote video.
 function onStartCall(evt){
-    console.log('*index*  onStartCall ',evt);
-    var remoteId = evt.data;
+    console.log('*main*  onStartCall ',evt);
+    let remoteId = evt.data;
     setRemoteStream(peer.getLiveStream(remoteId));
     if(localVideoEl.classList.contains('major-box')){
         localVideoEl.classList.remove('major-box');
@@ -174,7 +222,7 @@ function onStartCall(evt){
 }
 
 function onStopCall() {
-    console.log('*index*  onStopCall ');
+    console.log('*main*  onStopCall ');
     if( inCall ){
         peer.hangup(remoteCallID);
     }
@@ -193,23 +241,85 @@ function onStopCall() {
 
 //sets local user media to video object.
 function setLocalStream(str){
-    console.log('setLocal Video ',str);
+    console.log('*main*  setLocalStream & Video obj ',str);
     localStream = str;
     localVideoEl.srcObject = localStream;
 }
 //sets remote user media to video object.
 function setRemoteStream(str){
-    console.log('setRemote Video ',str);
+    console.log('*main*  setRemoteStream & Video obj ',str);
     remoteStream = str;
     remoteVideoEl.srcObject = remoteStream;
 }
+//update the list of media sources on UI
+function onMediaDevices( e ){
+    console.log('*main*  onMediaDevices: ',e,' data: ',e.data);
+    switch(e.type){
+        case media.DEVICES_UPDATED:
+            updateDevices(e.data);
+            break;
+        case media.ON_LOCAL_STREAM:
+            //update list with selected.
+            setSelectedDevices(e.data.getTracks());
+            break;
+    }
+}
 
+function updateDevices(devices){
+    const mics = devices.audioin,
+          cams = devices.videoin;
+    console.log('*main*  updateDevices - mics:',mics,', cams:',cams);
+    const camList = $('#ctrlMenu #camList'),
+          micList = $('#ctrlMenu #micList');
+          //camToggle = $('#ctrlMenu #camToggle'),
+          //micToggle = $('#ctrlMenu #micToggle');
+
+    micList.empty();
+    mics.forEach(device => {
+        micList.append('<li><a id="'+device.deviceId+'" data-group-id="'+device.groupId+'" class="btn" role="button">'+device.label+'</a></li>')
+    });
+
+    camList.empty();
+    cams.forEach(device => {
+        camList.append('<li><a id="'+device.deviceId+'" data-group-id="'+device.groupId+'" class="btn" role="button">'+device.label+'</a></li>')
+    });
+}
+
+function setSelectedDevices(devices){
+    console.log('*main*  setSelectedDevices: ',devices);
+    //console.log('- video: ',devices.getVideoTracks() );
+    devices.forEach(device => {
+        switch(device.kind){
+            case 'audio':
+                console.log('- audio toggel: ',device);
+                $('#ctrlMenu #micToggle').html(device.label.substr(0,20) + '<span class="caret"></span>');
+                break;
+            case 'video':
+            console.log('- video toggel: ',device);
+                $('#ctrlMenu #camToggle').html(device.label.substr(0,20) + '<span class="caret"></span>');
+                break;
+        }
+    })
+}
 
 /* TOOLS */
 
+function hasMedia(label,tracks){
+    console.log('tracks: ',tracks,', label: ',label );
+    let l=tracks.length, i, hasIt = false;
+    for(i=0; i<l; i++){
+        let track = tracks[i];
+        if(track.label.indexOf(label) > -1){
+            hasIt = true;
+            break;
+        }
+    }
+    return hasIt;
+}
+
 //gets URL parameters
 function getURLParameter(name) {
-    var ret = decodeURI( (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1] ) 
+    let ret = decodeURI( (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1] ) 
     return  ret == 'null' ? null : ret;
 };
 //makes unique userid
@@ -225,7 +335,7 @@ function guid(s='user') {
 window.onload = () => {
     console.log('pretty loaded!!');
     username = guid();//create random local username
-    var urlName = getURLParameter("callid");//get call id if exists from url
+    let urlName = getURLParameter("callid");//get call id if exists from url
     if(!!urlName) {
         remoteCallID = urlName;
         shareTitleEl.innerHTML = 'Calling User...';
