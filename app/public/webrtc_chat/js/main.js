@@ -494,7 +494,9 @@ function callEnd($event, $denied) {
     msgBuffer = [];
   }
   remoteChatRequest = {};
-
+  //set back to muted.
+  remoteVideoEl.muted = true;
+  
   if( isFullScreen() ){
     fullScreenVideo();
   }
@@ -754,6 +756,11 @@ window.onload = () => {
       logOutEl.classList.remove('sign-out');
       logOutEl.classList.add('sign-out-grn');
     }
+
+    remoteVideoEl.addEventListener("play", () => {
+      //unmute - (safari restriction)
+      remoteVideoEl.muted = false;
+    });
 
     doICE();
   };
