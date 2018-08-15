@@ -87,9 +87,10 @@ function WebRtc(xirsys) {
                 host: xirsys.gateway,
                 path: req.url,
                 headers: {
-                    "Authorization": "Basic " + new Buffer(xirsys.info.ident+":"+xirsys.info.secret).toString("base64")
+                  "Authorization": "Basic " + Buffer.from(xirsys.info.ident+":"+xirsys.info.secret).toString("base64")
                 }
             };
+
             if(req.method == 'PUT' || req.method == 'POST'){
                 var js = JSON.stringify(req.body);
                 options.headers['Content-Length'] = js.length;
