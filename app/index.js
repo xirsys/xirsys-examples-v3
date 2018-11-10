@@ -7,13 +7,16 @@ const bodyParser = require('body-parser'),
 //
 //  Basic Express App
 //
-var xirsys = config.get('xirsys');//Xirsys account info for API.
-var webrtc = require('./routes/webrtc.js');//Xirsys API module
-var app = express()
-    .use(cors())
+let xirsys = config.util.toObject( config.get('xirsys') );//Xirsys account info for API.
+let webrtc = require('./routes/webrtc.js');//Xirsys API module
+let admin = require('./routes/admin.js');//Xirsys API module
+let app = express()
+  	.set('view engine', 'ejs')
+	.use(cors())
     .use(bodyParser.json())//json parser
     .use(bodyParser.urlencoded({ extended: true }))//urlencoded parser
-    .use(express.static(path.join(__dirname, 'public')))//path to examples
-    .use("/webrtc",webrtc(xirsys));//watch API calls
+    .use("/webrtc",webrtc(xirsys))
+	.use("/admin",admin(xirsys))
+  	.use(express.static(path.join(__dirname, 'public')));//path to examples;//watch API calls
 
 module.exports = app;

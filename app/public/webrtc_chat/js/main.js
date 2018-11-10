@@ -61,12 +61,28 @@ var callPeerEl,hangUpEl,localVideoEl,remoteVideoEl,remoteFullScreenEl,
 
 // Get Xirsys ICE (STUN/TURN)
 function doICE(){
-  console.log('doICE ');
-  if(!ice){
-    ice = new $xirsys.ice('/webrtc',{channel:channelPath});
-    ice.on(ice.onICEList, onICE);
-  } else {
-    ice.doICE();
+  var urlIceServers = JSON.parse(getURLParameter('ice')) ? JSON.parse(getURLParameter('ice')) : null;
+
+  if(urlIceServers){
+    console.log('urlIceServers ', urlIceServers);
+    if(!ice){
+      ice = new $xirsys.ice();
+      ice.iceServers = urlIceServers;
+      onICE({type:'onICEList'});
+    } else {
+      ice.iceServers = urlIceServers;
+      onICE({type:'onICEList'});
+    }
+
+  }else{
+    console.log('non-urlIceServers ');
+    if(!ice){
+      ice = new $xirsys.ice('/rich2/webrtc',{channel:channelPath});
+      ice.on(ice.onICEList, onICE);
+    } else {
+      ice.doICE();
+    }
+
   }
 }
 function onICE(evt){
@@ -101,7 +117,7 @@ function setRemoteStream(str){
 function doSignal() {
   console.log('doSignal');
   //pass path to xirsys webrtc api, and local users name.
-  sig = new $xirsys.signal( '/webrtc', username ,{channel:channelPath} );
+  sig = new $xirsys.signal( '/rich2/webrtc', username ,{channel:channelPath} );
   //listen to all messages coming in from signaling.
   sig.on('message', msg => {
     var pkt = JSON.parse(msg.data);

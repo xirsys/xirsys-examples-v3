@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Xirsys - Examples</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+	<style type="text/css">
+		body {
+			background-color: #454547;
+		}
+		.jumbotron {
+			padding: 40px;
+		}
+		.container {
+			color: white;
+		}
+		ul li p {
+			color: grey;
+		}
+		h3 {
+			margin-bottom: 20px;
+		}
+		.app-view {
+			margin-bottom: 20px;
+		}
+		#more {
+			color: #999;
+		}
+	</style>
+</head>
+<body>
+	<section class="jumbotron">
+
+		<a class="pull-right" id="logout">Logout</a>
+		<h1 style="margin-bottom: 20px; margin-top: 20px;">Xirsys Examples Admin</h1>
+		<!--<p>Fill out form to set Xirsys config.</p>-->
+	</section>
+
+	<div class="container">
+
+		<section class="app-view">
+			<!--<h3>WebRTC Example Applications</h3>-->
+			<p>Fill out form to apply Xirsys Account Info.</p>
+			<div>
+				<form id="target" name='target'>
+					<div class="form-group">
+						<label for="ident">Ident:</label>
+						<input type="text" class="form-control" id="ident" name="ident" placeholder="<%= ident %>" required>
+					</div>
+					<div class="form-group">
+						<label for="secret">Secret:</label>
+						<input type="text" class="form-control" id="secret" name="secret" placeholder="<%= secret %>" required>
+					</div>
+					<div class="form-group">
+						<label for="channel">Channel:</label>
+						<input type="text" class="form-control" id="channel" name="channel" placeholder="<%= channel %>" required>
+					</div>
+					<div>
+						<button type="submit" class="btn btn-default">Apply</button>
+						<button id="reset" class="btn btn-danger">Reset</button>
+					</div>
+				</form>
+			</div>
+
+		</section>
+
+
+	</div>
+
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" 
+	integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" 
+	crossorigin="anonymous"></script>
+
+<script>
+  $( "#target" ).submit(function( event ) {
+    //alert( "Handler for .submit() called.");
+    event.preventDefault();
+    let o = {};
+    $("#target").serializeArray().forEach((prop)=>{
+      o[prop.name] = prop.value;
+	});
+    $.post( "/admin/apply", o )
+      .done(function( data ) {
+        //alert( "Data Loaded: " + data );
+        location.reload();
+      })
+  });
+
+  $('#reset').on('click', ()=>{
+    event.preventDefault();
+    reset();
+  })
+
+  function reset(){
+    $.post( "/admin/reset", {} )
+      .done(function( data ) {
+        location.reload();
+      })
+  }
+
+  $('#logout').on('click', ()=>{
+    event.preventDefault();
+    logout();
+  })
+
+  function logout(){
+    $.get( "/admin/logout")
+      .done(function( data ) {
+        console.log( "/admin/logout");
+        //location.reload();
+      })
+  }
+</script>
+
+</body>
+</html>
