@@ -1,5 +1,5 @@
 /*********************************************************************************
-  The MIT License (MIT) 
+  The MIT License (MIT)
 
   Copyright (c) 2017 Xirsys
 
@@ -35,13 +35,17 @@ var _ice = $xirsys.ice = function (apiUrl, info) {
 
     this.iceServers;
     if(!!this.apiUrl){
-        this.doICE();//first get our token.
+        if(this.info.ident && this.info.secret){
+            this.doICE(this.info.ident, this.info.secret);//first get our token.
+        }else {
+            this.doICE();
+        }
     }
 }
 
 _ice.prototype.onICEList = 'onICEList';
 
-_ice.prototype.doICE = function () {
+_ice.prototype.doICE = function (ident,secret) {
     console.log('*ice*  doICE: ',this.apiUrl+"/_turn"+this.channelPath);
     var own = this;
     var xhr = new XMLHttpRequest();
@@ -50,12 +54,13 @@ _ice.prototype.doICE = function () {
             var res = JSON.parse(xhr.responseText);
             console.log('*ice*  response: ',res);
             own.iceServers = own.filterPaths(res.v.iceServers);
-            
+
             own.emit(own.onICEList);
         }
     }
-    var path = this.apiUrl+"/_turn"+this.channelPath;
+    var path = this.apiUrl+"/_turn/"+this.channelPath;
     xhr.open("PUT", path, true);
+    if(ident && secret)xhr.setRequestHeader ("Authorization", "Basic " + btoa(`${ident}:${secret}`) );
     xhr.send();
 }
 

@@ -1,7 +1,7 @@
 //import { setTimeout } from "timers";
 
 /*********************************************************************************
-  The MIT License (MIT) 
+  The MIT License (MIT)
 
   Copyright (c) 2017 Xirsys
 
@@ -39,7 +39,7 @@ var _sig = $xirsys.signal = function (apiUrl, userName, info ) {
 
     //path to channel we are sending data to.
     //this.channelPath = !!info.channel ? this.cleanChPath(info.channel) : '';
-    
+
     this.userName = !!userName ? userName : null;
     this.apiUrl = !!apiUrl ? apiUrl : '/webrtc';
     //console.log('*signal*  constructed');
@@ -64,43 +64,61 @@ _sig.prototype.connectTo = function(channel){
         this.close();
         var own = this;
         setTimeout(() => {own.doToken()}, 800);
-    } else if(!!this.apiUrl){//!!this.userName && 
-        this.doToken();//first get our token.
+    } else if(!!this.apiUrl){//!!this.userName &&
+        if(this.info.ident && this.info.secret){
+            this.doToken(this.info.ident, this.info.secret);//first get our token.
+        }else {
+            this.doToken();
+        }
     } else {
         console.log('Error: Could connect signal!');
     }
     return true;
 }
 
-_sig.prototype.doToken = function(){
+_sig.prototype.doToken = function(ident, secret){
     var path = this.apiUrl+"/_token"+this.channelPath+"?k="+this.userName;
     console.log('*signal*  PUT doToken to '+path);
     var own = this;
+    var _headers = {};
+    if(ident && secret){
+        _headers["Authorization"] = "Basic " + btoa(ident + ":" + secret);
+    }
     $.ajax({
         url: path,
         type: 'PUT',
         dataType: 'json',
+        headers: _headers,
         error: function(data) {console.log('*signal*  error: ', data);},
         success: function(data) {
             own.tmpToken = data.v;
             if(own.tmpToken == 'no_namespace') {
-                console.log('*signal*  fail: ', own.tmpToken); 
+                console.log('*signal*  fail: ', own.tmpToken);
                 return;
             }
             console.log('*signal*  token: ',own.tmpToken);
-            own.doSignal();
+            if(own.info.ident && own.info.secret){
+                own.doSignal(own.info.ident, own.info.secret);//first get our token.
+            }else {
+                own.doSignal();
+            }
         }
     });
 }
 
-_sig.prototype.doSignal = function(){
+_sig.prototype.doSignal = function(ident, secret){
     console.log('*signal*  GET doSignal to '+this.apiUrl+'/_host'+this.channelPath+'?type=signal&k='+this.userName);
     var own = this;
     var path = this.info.channel ? this.apiUrl+'/_host'+this.channelPath+'?type=signal&k='+this.userName :this.apiUrl+'/_host?type=signal&k='+this.userName;
+    var _headers = {};
+    if(ident && secret){
+        _headers["Authorization"] = "Basic " + btoa(ident + ":" + secret);
+    }
     $.ajax({
         url: path,
         type: 'GET',
         dataType: 'json',
+        headers: _headers,
         error: function(data) { console.log('*signal*  error: ', data);},
         success: function(data) {
             own.host = data.v +'/'+own.ver+'/'+ own.tmpToken;
@@ -116,17 +134,17 @@ _sig.prototype.setupSocket = function(){
     var own = this;
     this.sig = new WebSocket(this.host);
     //notify when connection is open
-    this.sig.addEventListener('open', evt => { 
-        own.startHeart(); 
-        own.connected = true; 
+    this.sig.addEventListener('open', evt => {
+        own.startHeart();
+        own.connected = true;
     });
     //notify when connection closed
-    this.sig.addEventListener('close', evt => { 
+    this.sig.addEventListener('close', evt => {
         if(this.heartbeat) own.stopHeart();
         own.connected = false;
         this.sig = null;
     });
-    
+
     //add pending listeners to signaling object.
     var l = this.pendListeners.length;
     if(l > 0){
@@ -137,10 +155,10 @@ _sig.prototype.setupSocket = function(){
         this.pendListeners = [];
     }
     //notify when a message is received from signal network.
-    this.sig.addEventListener('message', msg => { 
+    this.sig.addEventListener('message', msg => {
         var pkt = JSON.parse(msg.data);
         console.log('*signal*  signal message! ',pkt);
-        var payload = pkt.p;//the actual message data sent 
+        var payload = pkt.p;//the actual message data sent
         var meta = pkt.m;//meta object
         var msgEvent = meta.o;//event label of message
         var toPeer = meta.t;//msg to user (if private msg)
@@ -152,7 +170,7 @@ _sig.prototype.setupSocket = function(){
         switch (msgEvent) {
             //first connect, list of all peers connected.
             case "peers":
-                //this is first call when you connect, 
+                //this is first call when you connect,
                 //  so we can check for channelPath here dynamically.
                 var sysNum = meta.f.lastIndexOf('__sys__');
                 if(sysNum > -1 && !this.channelPath){
@@ -200,7 +218,7 @@ _sig.prototype.sendMessage = function(msg, toPeer, info){
     if(!!toPeer) pkt.m.t = toPeer;
     //console.log('*signal*  sendMessage pkt: ',pkt);
     this.sig.send(JSON.stringify(pkt));
-    
+
     return pkt;
 }
 
