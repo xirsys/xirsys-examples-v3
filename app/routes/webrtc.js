@@ -19,7 +19,7 @@ function WebRtc(xirsys) {
     router.use('/:method/', function(req, res, next){
         if(req.params.method != null){
             //console.log(xirsys['allowedServices'].indexOf('/'+req.params.method) , req.params.method);
-            if (xirsys['allowedServices'].indexOf('/'+req.params.method) == -1) {
+            if (xirsys['allowedServices'].indexOf('/'+req.params.method) === -1) {
                 req.error = {
                     "s": "error",
                     "v": "not_allowed"
@@ -30,7 +30,7 @@ function WebRtc(xirsys) {
     });
     // returns app path to client.
     router.use('/:method/', function(req, res, next){
-        if(req.params.method != null && req.params.method == '_path'){
+        if(req.params.method != null && req.params.method === '_path'){
             let path = xirsys['info']['channel'];
             let o = {s:'ok',v:(!!path ? path : '')};
             console.log('send path: ',o);
@@ -41,7 +41,7 @@ function WebRtc(xirsys) {
     });
     //check request for allowedClientSetChannel
     router.use('/:method/:channel',function (req, res, next){
-        if(xirsys['overrideAllowedChannel'] == true){
+        if(xirsys['overrideAllowedChannel'] === true){
           xirsys.info.channel = req.params.channel != null ? req.params.channel : xirsys.info.channel;
         }else{
           req.error = {
@@ -58,11 +58,11 @@ function WebRtc(xirsys) {
         var path = req.url.split('?').shift();
         var slashIndex = path.indexOf('/', 1);
         let suffix;//if we have a trailing path, were using custom channels.
-        if (slashIndex != -1) {
+        if (slashIndex !== -1) {
           suffix = path.substr(slashIndex);
           path = path.substr(0, slashIndex);
         }
-        if(methods.indexOf(path) != -1){
+        if(methods.indexOf(path) !== -1){
             var arr = req.url.split('?');
             //if suffix exists, do not add root channel path, we can assume were overriding channel paths.
             req.url = arr[0] +"/"+ (!!suffix ? '' : xirsys.info.channel);
@@ -82,16 +82,23 @@ function WebRtc(xirsys) {
         }
         //if error null proxy request to xirsys
         else {
+
+            var localAddress = req.headers['x-forwarded-for'] ||
+                req.connection.remoteAddress ||
+                req.socket.remoteAddress ||
+                (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
             var options = {
                 method: req.method,
                 host: xirsys.gateway,
                 path: req.url,
+                localAddress,
                 headers: {
                   "Authorization": "Basic " + Buffer.from(xirsys.info.ident+":"+xirsys.info.secret).toString("base64")
                 }
             };
 
-            if(req.method == 'PUT' || req.method == 'POST'){
+            if(req.method === 'PUT' || req.method === 'POST'){
                 var js = JSON.stringify(req.body);
                 options.headers['Content-Length'] = js.length;
                 options.headers["Content-Type"] = "application/json";
@@ -111,8 +118,8 @@ function WebRtc(xirsys) {
                     res.send(str);
                 });
             })
-            
-            if(req.method == 'PUT' || req.method == 'POST'){
+
+            if(req.method === 'PUT' || req.method === 'POST'){
                 h.write(js);
             }
             h.end();
