@@ -17,7 +17,6 @@ var app = express()
     .use(bodyParser.json())//json parser
     .use(bodyParser.urlencoded({ extended: true }))//urlencoded parser
     .use(express.static(path.join(__dirname, 'public')))//path to examples
-	.use(preferredgateway(xirsys.gateways))
-    .use("/webrtc",webrtc(xirsys));//watch API calls
+    .use("/webrtc", preferredgateway(xirsys.gateways), webrtc(xirsys));//watch API calls
 
 module.exports = app;

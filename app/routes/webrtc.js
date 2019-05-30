@@ -82,12 +82,6 @@ function WebRtc(xirsys) {
         }
         //if error null proxy request to xirsys
         else {
-
-            var localAddress = req.headers['x-forwarded-for'] ||
-                req.connection.remoteAddress ||
-                req.socket.remoteAddress ||
-                (req.connection.socket ? req.connection.socket.remoteAddress : null);
-
             var options = {
                 method: req.method,
                 host: req.XIRSYS_GATEWAY || xirsys.gateway,
@@ -98,6 +92,7 @@ function WebRtc(xirsys) {
                 }
             };
 
+            console.log('requesting host: ', options.host);
             if(req.method === 'PUT' || req.method === 'POST'){
                 var js = JSON.stringify(req.body);
                 options.headers['Content-Length'] = js.length;
