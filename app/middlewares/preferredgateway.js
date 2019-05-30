@@ -1,45 +1,42 @@
+const config = require('config');
 const geodesy  = require('geodesy');
 const maxmind  = require('maxmind');
-const geolite2 = require('geolite2');
-const dns      = require('dns').promises;
+const dns = require('dns');
 
 const LatLonEllipsoidal = geodesy.LatLonEllipsoidal;
-const MaxmindDb         = maxmind.openSync(geolite2.paths.city);//maxmind.openSync(config.get('maxmind.db'));
+const MaxmindDb         = maxmind.openSync(config.get('maxmind.db'));
 //
 function hostnamesLocations(hostnames) {
-  let filter = [];
-  return [...hostnames].reduce((p, _, i) =>
-                                 p.then(_ => new Promise(resolve => {
-                                   let hostname = hostnames[i];
-                                   if (!!hostname) {
-                                     dns.resolve4(hostname)
-                                       .then((result) => {
-                                         filter.push({ip: result[0], hostname});
-                                         resolve(getLocations(filter));
-                                       })
-                                       .catch((error) => {
-                                         resolve(getLocations(filter));
-                                       })
+  let promises = [];
+  for (let h of hostnames) {
+                                   if (h) {
+                                     promises.push(new Promise((resolve, reject) => {
+                                       dns.resolve4(h, (err, result) => {
+					   if (err) {
+                                             console.error('Error resolving DNS', err);
+					     resolve(null);
+                                             return;
+					   }
+					   resolve(getLocations({ip: result[0], hostname: h}));
+				          });
+                                     }));
                                    }
-                                 }))
-    , Promise.resolve());
+ }
+
+ return Promise.all(promises);
 }
 
-function getLocations(ipList) {
-  let locations = [];
-  for (let ipo of ipList) {
+function getLocations(ipo) {
     let location = MaxmindDb.get(ipo.ip);
-    location     = Object.assign({}, location, ipo);
-    locations.push(location);
-  }
-  return locations;
+    return Object.assign({}, location, ipo);
 }
 
 function getPreferredLocation(location, coordinates) {
   let preferredLocation;
-  let shortestD = 196900000;//miles around the world
+  let shortestD = Number.MAX_SAFE_INTEGER;
 
   for (let coordinate of coordinates) {
+    if (!coordinate) continue;
     //console.log(coordinate.hostname);
     let d = getDistance(location.location, coordinate.location);
     if (d < shortestD) {
@@ -77,8 +74,6 @@ module.exports = function (gateways) {
     }//no gateways, move on
     let pl;
     let clientLocation = MaxmindDb.get(req.ip);
-
-    console.log('client ip info ', req.ip, ' - ', JSON.stringify(req.ips));
 
     if (!clientLocation) {
       console.log('client location not found ', req.ip);

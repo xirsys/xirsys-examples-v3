@@ -24,6 +24,9 @@
   "host":{
     "httpport": 3080,
     "httpsport": 3443
+  },
+  "maxmind": {
+    "db": "/usr/share/GeoIP/GeoLite2-City.mmdb"
   }
 }
 
