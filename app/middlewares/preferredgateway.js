@@ -82,6 +82,8 @@ module.exports = function (gateways) {
       console.log('client location not found ', req.ip);
       return next();
     }
+    console.log('client ip info ', req.ip, ' - ', JSON.stringify(req.ips));
+
 
     hostnamesLocations(gateways)
       .then(locations => {
