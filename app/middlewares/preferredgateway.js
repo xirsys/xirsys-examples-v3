@@ -88,6 +88,7 @@ module.exports = function (gateways) {
         try {
           pl                 = getPreferredLocation(clientLocation, locations);
           req.XIRSYS_GATEWAY = pl.hostname;
+          console.log('XIRSYS_GATEWAY ',req.XIRSYS_GATEWAY);
           next();
         } catch (e) {
           next();
