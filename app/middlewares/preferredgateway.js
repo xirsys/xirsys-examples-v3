@@ -80,8 +80,8 @@ module.exports = function (gateways) {
 
         if(!clientLocation){
             console.log('clien loc');
-            clientLocation = MaxmindDb.get('138.197.139.250');//br'181.215.183.204',tk'52.194.163.111'
-            //return next();
+            //clientLocation = MaxmindDb.get('138.197.139.250');//br'181.215.183.204',tk'52.194.163.111'
+            return next();
         }
 
         getIPs(gateways).then(locations =>{
