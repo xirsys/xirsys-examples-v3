@@ -10,9 +10,13 @@
     "overrideAllowedChannel": false,
     "gateways": [
       "ws.xirsys.com",
+      "us.xirsys.com",
       "es.xirsys.com",
       "tk.xirsys.com",
       "bs.xirsys.com",
+      "sh.xirsys.com",
+      "ss.xirsys.com",
+      "ms.xirsys.com",
       "to.xirsys.com",
       "sp.xirsys.com"
     ]

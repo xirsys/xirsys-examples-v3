@@ -71,6 +71,7 @@ function getDistance(coordinate1, coordinate2) {
 
 module.exports = function (gateways) {
   return (req, res, next) => {
+    if(!gateways.length)return next();//no gateways, move on
     let pl;
     let clientLocation = MaxmindDb.get(req.ip);
 
