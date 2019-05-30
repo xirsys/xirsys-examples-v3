@@ -90,9 +90,9 @@ function WebRtc(xirsys) {
 
             var options = {
                 method: req.method,
-                host: xirsys.gateway,
+                host: req.XIRSYS_GATEWAY || xirsys.gateway,
                 path: req.url,
-                localAddress,
+                //localAddress,
                 headers: {
                   "Authorization": "Basic " + Buffer.from(xirsys.info.ident+":"+xirsys.info.secret).toString("base64")
                 }

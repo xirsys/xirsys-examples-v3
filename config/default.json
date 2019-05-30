@@ -7,10 +7,19 @@
       "channel": "< Your Account Channel Path >"
     },
     "allowedServices": ["/_token", "/_host", "/_data", "/_ns", "/_turn"],
-    "overrideAllowedChannel": false
+    "overrideAllowedChannel": false,
+    "gateways": [
+      "ws.xirsys.com",
+      "es.xirsys.com",
+      "tk.xirsys.com",
+      "bs.xirsys.com",
+      "to.xirsys.com",
+      "sp.xirsys.com"
+    ]
   },
   "host":{
     "httpport": 3080,
     "httpsport": 3443
   }
 }
+
