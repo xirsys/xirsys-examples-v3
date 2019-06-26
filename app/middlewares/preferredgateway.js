@@ -1,34 +1,38 @@
-const config = require('config');
-const geodesy  = require('geodesy');
-const maxmind  = require('maxmind');
-const dns = require('dns');
+const config  = require('config');
+const geodesy = require('geodesy');
+const maxmind = require('maxmind');
+const dns     = require('dns');
+
+//let geolite2 = require('geolite2');
 
 const LatLonEllipsoidal = geodesy.LatLonEllipsoidal;
-const MaxmindDb         = maxmind.openSync(config.get('maxmind.db'));
+const MaxmindDb = maxmind.openSync(config.get('maxmind.db'));
+//const MaxmindDb         = maxmind.openSync(geolite2.paths.city);
+
 //
 function hostnamesLocations(hostnames) {
   let promises = [];
   for (let h of hostnames) {
-                                   if (h) {
-                                     promises.push(new Promise((resolve, reject) => {
-                                       dns.resolve4(h, (err, result) => {
-					   if (err) {
-                                             console.error('Error resolving DNS', err);
-					     resolve(null);
-                                             return;
-					   }
-					   resolve(getLocations({ip: result[0], hostname: h}));
-				          });
-                                     }));
-                                   }
- }
+    if (h) {
+      promises.push(new Promise((resolve, reject) => {
+        dns.resolve4(h, (err, result) => {
+          if (err) {
+            console.error('Error resolving DNS', err);
+            resolve(null);
+            return;
+          }
+          resolve(getLocations({ip: result[0], hostname: h}));
+        });
+      }));
+    }
+  }
 
- return Promise.all(promises);
+  return Promise.all(promises);
 }
 
 function getLocations(ipo) {
-    let location = MaxmindDb.get(ipo.ip);
-    return Object.assign({}, location, ipo);
+  let location = MaxmindDb.get(ipo.ip);
+  return Object.assign({}, location, ipo);
 }
 
 function getPreferredLocation(location, coordinates) {
@@ -36,7 +40,9 @@ function getPreferredLocation(location, coordinates) {
   let shortestD = Number.MAX_SAFE_INTEGER;
 
   for (let coordinate of coordinates) {
-    if (!coordinate) continue;
+    if (!coordinate) {
+      continue;
+    }
     //console.log(coordinate.hostname);
     let d = getDistance(location.location, coordinate.location);
     if (d < shortestD) {
@@ -66,10 +72,12 @@ function getDistance(coordinate1, coordinate2) {
   return distance;
 }
 
-module.exports = function (gateways) {
+module.exports = function (xirsys) {
+  let gateways = xirsys.gateways;
   return (req, res, next) => {
-    if(!gateways.length){
+    if (!gateways.length) {
       console.log('gateways not found');
+      req.PREFERRED_XIRSYS_GATEWAY = xirsys.gateway;
       return next();
     }//no gateways, move on
     let pl;
@@ -77,21 +85,24 @@ module.exports = function (gateways) {
 
     if (!clientLocation) {
       console.log('client location not found ', req.ip);
+      req.PREFERRED_XIRSYS_GATEWAY = xirsys.gateway;
       return next();
     }
 
     hostnamesLocations(gateways)
       .then(locations => {
         try {
-          pl                 = getPreferredLocation(clientLocation, locations);
-          req.XIRSYS_GATEWAY = pl.hostname;
-          console.log('XIRSYS_GATEWAY ',req.XIRSYS_GATEWAY);
+          pl                           = getPreferredLocation(clientLocation, locations);
+          req.PREFERRED_XIRSYS_GATEWAY = pl.hostname;
+          console.log('PREFERRED_XIRSYS_GATEWAY ', req.PREFERRED_XIRSYS_GATEWAY);
           next();
         } catch (e) {
+          req.PREFERRED_XIRSYS_GATEWAY = xirsys.gateway;
           next();
         }
       })
-      .catch(()=>{
+      .catch(() => {
+        req.PREFERRED_XIRSYS_GATEWAY = xirsys.gateway;
         next();
       });
   };

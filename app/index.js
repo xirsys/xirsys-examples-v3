@@ -9,15 +9,14 @@ const bodyParser = require('body-parser'),
 //
 
 
-var xirsys = config.get('xirsys');//Xirsys account info for API.
-var webrtc = require('./routes/webrtc.js');//Xirsys API module
-var preferredgateway = require('./middlewares/preferredgateway.js');//Xirsys API module
-var app = express()
+let xirsys = config.get('xirsys');//Xirsys account info for API.
+let webrtc = require('./routes/webrtc.js');//Xirsys API module
+let app = express()
     .set('trust proxy', 'loopback')
     .use(cors())
     .use(bodyParser.json())//json parser
     .use(bodyParser.urlencoded({ extended: true }))//urlencoded parser
     .use(express.static(path.join(__dirname, 'public')))//path to examples
-    .use("/webrtc", preferredgateway(xirsys.gateways), webrtc(xirsys));//watch API calls
+    .use("/webrtc", webrtc(xirsys));//watch API calls
 
 module.exports = app;
