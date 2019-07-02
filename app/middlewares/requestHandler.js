@@ -14,7 +14,11 @@ let request = function (options) {
       });
       httpres.on('end', function () {
         console.log("Requested: ", options.path, "\n : ", str);
-        resolve(JSON.parse(str));
+        let result = JSON.parse(str);
+        if(result.s !== 'ok'){
+          return reject(result)
+        }
+        resolve(result);
       });
     });
     if (options.method === 'PUT' || options.method === 'POST') {
