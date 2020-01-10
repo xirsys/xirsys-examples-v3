@@ -25,7 +25,6 @@
         background-color: #12acef;
     }
 </style>
-<button id="screenShareButton"></button>
 <p id="subTitle"></p>
 <form id="createRoom">
     <input id="sessionInput"/>
@@ -119,7 +118,7 @@
         function setRoom(name) {
             $('form').remove();
             $('h1').text(name);
-            $('#subTitle').text('Link to join: ' + location.href);
+            $('#subTitle').html('Link to join: ' + '<a target="_blank" href="'+location.href+'">'+location.href+'</a>');
             $('body').addClass('active');
         }
 
@@ -133,7 +132,7 @@
 
                     var newUrl = location.pathname + '?' + name;
                     if (!err) {
-                        history.replaceState({foo: 'bar'}, null, newUrl);
+                        history.replaceState({}, null, newUrl);
                         setRoom(name);
                     } else {
                         console.log(err);
@@ -143,31 +142,7 @@
             });
         }
 
-        var button = $('#screenShareButton'),
-            setButton = function (bool) {
-                button.text(bool ? 'share screen' : 'stop sharing');
-            };
-        webrtc.on('localScreenStopped', function () {
-            setButton(true);
-        });
 
-        setButton(true);
-
-        button.click(function () {
-            if (webrtc.getLocalScreen()) {
-                webrtc.stopScreenShare();
-                setButton(true);
-            } else {
-                webrtc.shareScreen(function (err) {
-                    if (err) {
-                        setButton(true);
-                    } else {
-                        setButton(false);
-                    }
-                });
-
-            }
-        });
     }
 </script>
 </body>
