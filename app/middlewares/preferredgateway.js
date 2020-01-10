@@ -3,12 +3,14 @@ const geodesy = require('geodesy');
 const maxmind = require('maxmind');
 const dns     = require('dns');
 
-//let geolite2 = require('geolite2');
-
 const LatLonEllipsoidal = geodesy.LatLonEllipsoidal;
-const MaxmindDb = maxmind.openSync(config.get('maxmind.db'));
-//const MaxmindDb         = maxmind.openSync(geolite2.paths.city);
-
+let MaxmindDb;
+if(config.get('maxmind.db') === 'hosted'){
+  const geolite2 = require('geolite2');
+  MaxmindDb     = maxmind.openSync(geolite2.paths.city);
+}else{
+  MaxmindDb = maxmind.openSync(config.get('maxmind.db'));
+}
 //
 function hostnamesLocations(hostnames) {
   let promises = [];
