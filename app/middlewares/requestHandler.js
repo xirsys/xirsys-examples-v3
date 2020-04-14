@@ -1,7 +1,6 @@
 let https   = require('https');
 let request = function (options) {
   console.log(options);
-  options.timeout = 6000;
   return new Promise((resolve, reject) => {
     //make call to Xirsys API, with modified request. Expect and return response to client.
     let h = https.request(options, function (httpres) {
@@ -56,6 +55,7 @@ module.exports = function (xirsys) {
           headers: {
             "Authorization": "Basic " + Buffer.from(xirsys.info.ident + ":" + xirsys.info.secret).toString("base64")
           },
+          timeout: xirsys.gatewayTimeout,
           body:    req.body
         };
         request(options)

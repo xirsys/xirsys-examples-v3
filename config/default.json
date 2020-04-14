@@ -1,6 +1,7 @@
 {
   "xirsys": {
     "gateway": "global.xirsys.net",
+    "gatewayTimeout": 6000,
     "info": {
       "ident": "< Your Account Ident >",
       "secret": "< Your Account Secret >",
@@ -19,6 +20,14 @@
       "ms.xirsys.com",
       "to.xirsys.com",
       "sp.xirsys.com"
+    ],
+    "fallbackIceServers": [
+      {"url": "stun:stun.l.google.com:19305"},
+      {"url": "stun1:stun.l.google.com:19305"},
+      {"url": "stun2:stun.l.google.com:19305"},
+      {"url": "stun3:stun.l.google.com:19305"},
+      {"url": "stun4:stun.l.google.com:19305"},
+      {"url": "stun:stun.services.mozilla.com"}
     ]
   },
   "host":{

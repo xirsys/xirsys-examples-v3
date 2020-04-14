@@ -12,12 +12,7 @@ module.exports = function (xirsys) {
       console.warn('REQUEST RESPONSE - ', req.error, req.success);
       let path = getPath(req);
       if (path === '/_turn' && req.method === 'PUT') {
-        let v = {iceServers:[{"url": "stun:stun.l.google.com:19305"},
-            {"url": "stun1:stun.l.google.com:19305"},
-            {"url": "stun2:stun.l.google.com:19305"},
-            {"url": "stun3:stun.l.google.com:19305"},
-            {"url": "stun4:stun.l.google.com:19305"},
-            {"url": "stun:stun.services.mozilla.com"}]};
+        let v = {iceServers:xirsys.fallbackIceServers};
         if(req.success){
           if(req.success.v) {
             if (req.success.v.iceServers) {
