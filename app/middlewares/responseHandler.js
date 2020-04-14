@@ -1,41 +1,37 @@
+function getPath(req){
+  let path       = req.url.split('?').shift();
+  let slashIndex = path.indexOf('/', 1);
+  if (slashIndex !== -1) {
+    path   = path.substr(0, slashIndex);
+  }
+  return path;
+}
 module.exports = function (xirsys) {
   return [
     (req, res, next) => {
-      if (req.error) {
-        console.warn('REQUEST ERROR - ', req.params, req.error);
-        let methods    = ['/_token', '/_turn', '/_subs', '/_data', '/_acc'];
-        let path       = req.url.split('?').shift();
-        let slashIndex = path.indexOf('/', 1);
-        let suffix;//if we have a trailing path, were using custom channels.
-        if (slashIndex !== -1) {
-          suffix = path.substr(slashIndex);
-          path   = path.substr(0, slashIndex);
-        }
-        if (methods.indexOf(path) !== -1) {
-          let arr = req.url.split('?');
-          //if suffix exists, do not add root channel path, we can assume were overriding channel paths.
-          req.url = arr[0] + "/" + (!!suffix ? '' : xirsys.info.channel);
-          if (arr[1] != null) {
-            req.url = req.url + "?" + arr[1];
-          }
-
-          if (path === '/_turn' && req.method === 'PUT') {
-            req.error   = null;
-            req.success = {
-              v: xirsys.iceServers || [{"url": "stun:stun.l.google.com:19305"},
-                {"url": "stun1:stun.l.google.com:19305"},
-                {"url": "stun2:stun.l.google.com:19305"},
-                {"url": "stun3:stun.l.google.com:19305"},
-                {"url": "stun4:stun.l.google.com:19305"},
-                {"url": "stun:stun.services.mozilla.com"}],
-              s: "ok"
-            };
+      console.warn('REQUEST ERROR - ', req.params, req.error, req.success);
+      let path = getPath(req);
+      if (path === '/_turn' && req.method === 'PUT') {
+        let v = {iceServers:[{"url": "stun:stun.l.google.com:19305"},
+            {"url": "stun1:stun.l.google.com:19305"},
+            {"url": "stun2:stun.l.google.com:19305"},
+            {"url": "stun3:stun.l.google.com:19305"},
+            {"url": "stun4:stun.l.google.com:19305"},
+            {"url": "stun:stun.services.mozilla.com"}]};
+        if(req.success){
+          if(req.success.v) {
+            if (req.success.v.iceServers) {
+              v = req.success.v;
+            }
           }
         }
-        next();
-      } else {
-        next();
+        req.error   = null;
+        req.success = {
+          v: v,
+          s: "ok"
+        };
       }
+      next();
     },
     (req, res) => {
       if (req.error) {
