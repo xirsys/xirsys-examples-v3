@@ -9,7 +9,7 @@ function getPath(req){
 module.exports = function (xirsys) {
   return [
     (req, res, next) => {
-      console.warn('REQUEST ERROR - ', req.params, req.error, req.success);
+      console.warn('REQUEST RESPONSE - ', req.error, req.success);
       let path = getPath(req);
       if (path === '/_turn' && req.method === 'PUT') {
         let v = {iceServers:[{"url": "stun:stun.l.google.com:19305"},
