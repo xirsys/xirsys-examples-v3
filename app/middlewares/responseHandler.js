@@ -21,7 +21,7 @@ module.exports = function (xirsys) {
         if(req.success){
           if(req.success.v) {
             if (req.success.v.iceServers) {
-              v = req.success.v;
+              v.iceServers = req.success.v.iceServers;
             }
           }
         }

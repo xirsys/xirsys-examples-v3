@@ -42,7 +42,6 @@ let request = function (options) {
 
 module.exports = function (xirsys) {
   let options = {};
-  let success, error;
   console.log('RH1');
   return [
     (req, res, next) => {
@@ -61,34 +60,13 @@ module.exports = function (xirsys) {
         };
         request(options)
           .then((result) => {
-            success = result;
+            req.success = result;
             next();
           })
           .catch((err) => {
-            error = err;
+            req.error = err;
             next()
           });
       }
-    },
-    (req, res, next) => {
-      if (success) {
-        req.success = success;
-        return next();
-      }
-      //
-      if (error && JSON.stringify(error) !== JSON.stringify({s: "error", v: "Proxy Request Error"})) {
-        return next();
-      }
-
-      options.host = xirsys.gateway;// overrides to global/default gateway
-      request(options)
-        .then((result) => {
-          req.success = result;
-          next();
-        })
-        .catch((err) => {
-          req.error = err;
-          next()
-        });
     }]
 };
