@@ -1,6 +1,7 @@
 let https   = require('https');
 let request = function (options) {
   console.log(options);
+  options.timeout = 6000;
   return new Promise((resolve, reject) => {
     //make call to Xirsys API, with modified request. Expect and return response to client.
     let h = https.request(options, function (httpres) {
@@ -27,9 +28,13 @@ let request = function (options) {
       options.headers["Content-Type"]   = "application/json";
       h.write(js);
     }
+    h.on('timeout', (e) => {
+      console.log(e);
+      return reject({s: "error", v: "Proxy Timeout Error"});//todo - better error
+    });
     h.on('error', (e) => {
       console.log(e.message);
-      reject({s: "error", v: "Proxy Request Error"});//todo - better error
+      return reject({s: "error", v: "Proxy Request Error"});//todo - better error
     });
     h.end();
   });
@@ -46,7 +51,7 @@ module.exports = function (xirsys) {
       } else {
         //construct options
         options = {
-          host:    'global.xirsys.com',//req.PREFERRED_XIRSYS_GATEWAY,
+          host:    req.PREFERRED_XIRSYS_GATEWAY,
           method:  req.method,
           path:    req.url,
           headers: {
