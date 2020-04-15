@@ -21,14 +21,16 @@
       "to.xirsys.com",
       "sp.xirsys.com"
     ],
-    "fallbackIceServers": [
-      {"url": "stun:stun.l.google.com:19305"},
-      {"url": "stun1:stun.l.google.com:19305"},
-      {"url": "stun2:stun.l.google.com:19305"},
-      {"url": "stun3:stun.l.google.com:19305"},
-      {"url": "stun4:stun.l.google.com:19305"},
-      {"url": "stun:stun.services.mozilla.com"}
-    ]
+    "fallbackIceServers": [{
+        "urls": [
+          "stun:stun.l.google.com:19305",
+          "stun1:stun.l.google.com:19305",
+          "stun2:stun.l.google.com:19305",
+          "stun3:stun.l.google.com:19305",
+          "stun4:stun.l.google.com:19305",
+          "stun:stun.services.mozilla.com"
+        ]
+    }]
   },
   "host":{
     "httpport": 3080,

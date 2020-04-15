@@ -97,7 +97,7 @@ jspm_packages
 
 
 # local node-config
-config/local*
+config/local.json
 config/development*
 config/production*
 
