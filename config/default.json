@@ -22,14 +22,14 @@
       "sp.xirsys.com"
     ],
     "fallbackIceServers": [{
-        "urls": [
-          "stun:stun.l.google.com:19305",
-          "stun1:stun.l.google.com:19305",
-          "stun2:stun.l.google.com:19305",
-          "stun3:stun.l.google.com:19305",
-          "stun4:stun.l.google.com:19305",
-          "stun:stun.services.mozilla.com"
-        ]
+      "urls": [
+        "stun:stun.l.google.com:19305",
+        "stun:stun1.l.google.com:19305",
+        "stun:stun2.l.google.com:19305",
+        "stun:stun3.l.google.com:19305",
+        "stun:stun4.l.google.com:19305",
+        "stun:stun.services.mozilla.com"
+      ]
     }]
   },
   "host":{
