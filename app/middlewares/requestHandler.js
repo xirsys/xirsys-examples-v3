@@ -14,7 +14,12 @@ let request = function (options) {
       });
       httpres.on('end', function () {
         console.log("Requested: ", options.path, "\n : ", str);
-        let result = JSON.parse(str);
+        let result;
+        try{
+          result = JSON.parse(str);
+        }catch (e) {
+          return reject(e)
+        }
         if(result.s !== 'ok'){
           return reject(result)
         }
