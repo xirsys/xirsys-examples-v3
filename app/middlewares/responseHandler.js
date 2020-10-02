@@ -29,6 +29,7 @@ module.exports = function (xirsys) {
       next();
     },
     (req, res) => {
+      res.type('application/json');
       if (req.error) {
         res.status(500).send(req.error);
       } else {
