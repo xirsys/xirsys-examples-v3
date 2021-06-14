@@ -15,7 +15,7 @@ https.createServer(httpsOptions, app).listen(httpsport, function (err) {
     if (err) {
         throw err
     }
-    console.log('Secure server is listening on '+httpsport+'...');
+    console.log('Secure server is listening on port '+httpsport+'...');
 });
 
 http.createServer(app).listen(httpport, function(err) {
