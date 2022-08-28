@@ -444,6 +444,7 @@ function onLobby(e){
             break;
         case chManager.ON_CHANNELS:
             //check to see if there is a lobby
+            lobbyLabel = '/' + lobbyLabel;
             if(dt.list.indexOf(lobbyLabel) > -1){
                 //we have a lobby! Create connection to /channelPath (root channel)/lobbyLabel (lobby room)
                 console.log('we have '+lobbyLabel+' subroom already!');
